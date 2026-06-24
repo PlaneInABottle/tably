@@ -28,15 +28,15 @@ describe("authService", () => {
       error: null,
     } as never)
 
-    await expect(sendPasswordReset("diver@example.com")).resolves.toEqual({
+    await expect(sendPasswordReset("member@example.com")).resolves.toEqual({
       ok: true,
       data: undefined,
     })
 
-    expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith("diver@example.com", {
+    expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith("member@example.com", {
       redirectTo: PASSWORD_RESET_REDIRECT_URL,
     })
-    expect(PASSWORD_RESET_REDIRECT_URL).toBe("divingbuddies://update-password")
+    expect(PASSWORD_RESET_REDIRECT_URL).toBe("tably://update-password")
   })
 
   it("accepts current terms after successful sign in", async () => {
@@ -46,12 +46,12 @@ describe("authService", () => {
     } as never)
     jest.mocked(supabase.rpc).mockResolvedValue({ error: null } as never)
 
-    await expect(signInWithPassword("diver@example.com", "Password123!")).resolves.toMatchObject({
+    await expect(signInWithPassword("member@example.com", "Password123!")).resolves.toMatchObject({
       ok: true,
     })
 
     expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
-      email: "diver@example.com",
+      email: "member@example.com",
       password: "Password123!",
     })
     expect(supabase.rpc).toHaveBeenCalledWith("accept_current_terms")
@@ -65,15 +65,15 @@ describe("authService", () => {
     jest.mocked(supabase.rpc).mockResolvedValue({ error: null } as never)
 
     await expect(
-      signUpWithPassword("new.diver@example.com", "Password123!", "New Diver"),
+      signUpWithPassword("new.member@example.com", "Password123!", "New Member"),
     ).resolves.toMatchObject({
       ok: true,
     })
 
     expect(supabase.auth.signUp).toHaveBeenCalledWith({
-      email: "new.diver@example.com",
+      email: "new.member@example.com",
       password: "Password123!",
-      options: { data: { display_name: "New Diver" } },
+      options: { data: { display_name: "New Member" } },
     })
     expect(supabase.rpc).toHaveBeenCalledWith("accept_current_terms")
   })

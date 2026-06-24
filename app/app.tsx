@@ -56,7 +56,7 @@ async function createRecoverySessionFromUrl(url: string) {
 
 // Web linking configuration
 const prefix = Linking.createURL("/")
-const appSchemePrefix = "divingbuddies://"
+const appSchemePrefix = "tably://"
 const config = {
   screens: {
     Auth: {
@@ -71,18 +71,14 @@ const config = {
     LocationPicker: "location-picker",
     Main: {
       screens: {
-        Map: "map",
-        DiveEvent: "dive-event",
-        Chat: {
-          screens: {
-            ConversationList: "chat",
-            ConversationDetail: "chat/:conversationId",
-          },
-        },
+        Today: "today",
+        CreateTable: "create",
+        Chats: "chats",
         Profile: "profile",
-        Settings: "settings",
       },
     },
+    TableDetail: "table/:tableId",
+    Settings: "settings",
   },
 }
 

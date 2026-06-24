@@ -4,7 +4,7 @@ import { supabase } from "../supabase/client"
 
 export type AuthResult<T = void> = { ok: true; data: T } | { ok: false; error: string }
 
-export const PASSWORD_RESET_REDIRECT_URL = "divingbuddies://update-password"
+export const PASSWORD_RESET_REDIRECT_URL = "tably://update-password"
 
 type RpcClient = {
   rpc: (
