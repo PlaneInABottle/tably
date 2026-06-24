@@ -10,7 +10,12 @@ import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { listSocialTables } from "@/services/tables/tableService"
-import { formatActivityLabel, formatPlanTime, getMemberStatusLabel, getTableStatusLabel } from "@/services/tables/tableUtils"
+import {
+  formatActivityLabel,
+  formatPlanTime,
+  getMemberStatusLabel,
+  getTableStatusLabel,
+} from "@/services/tables/tableUtils"
 import type { SocialTableSummary } from "@/services/tables/types"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
@@ -27,7 +32,10 @@ interface TodayScreenProps extends MainTabScreenProps<"Today"> {}
 
 type ViewMode = "list" | "map"
 
-function statusColor(status: SocialTableSummary["status"], colors: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+function statusColor(
+  status: SocialTableSummary["status"],
+  colors: ReturnType<typeof useAppTheme>["theme"]["colors"],
+) {
   if (status === "confirmed") return colors.palette.secondary500
   if (status === "happening") return colors.tint
   if (status === "forming") return colors.palette.accent500
@@ -52,7 +60,9 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
       [...tables].sort((a, b) => {
         const aMomentum = a.status === "confirmed" ? 0 : a.confirmedCount >= 2 ? 1 : 2
         const bMomentum = b.status === "confirmed" ? 0 : b.confirmedCount >= 2 ? 1 : 2
-        return aMomentum - bMomentum || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+        return (
+          aMomentum - bMomentum || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+        )
       }),
     [tables],
   )
@@ -104,13 +114,32 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
         <View style={themed($cardTopRow)}>
           <View style={themed($activityBadge)}>
             <Ionicons name="sparkles" size={16} color={colors.palette.neutral100} />
-            <Text text={formatActivityLabel(table.activity)} size="xs" preset="bold" style={themed($activityText)} />
+            <Text
+              text={formatActivityLabel(table.activity)}
+              size="xs"
+              preset="bold"
+              style={themed($activityText)}
+            />
           </View>
-          <Text text={getTableStatusLabel(table.status, table.confirmedCount)} size="xs" preset="bold" style={themed($statusText)} />
+          <Text
+            text={getTableStatusLabel(table.status, table.confirmedCount)}
+            size="xs"
+            preset="bold"
+            style={themed($statusText)}
+          />
         </View>
         <Text text={table.title} preset="subheading" numberOfLines={2} />
-        <Text text={`${formatPlanTime(table.startsAt)} · ${table.areaLabel}`} size="sm" style={themed($mutedText)} />
-        <Text text={table.note || table.vibe} size="sm" numberOfLines={2} style={themed($mutedText)} />
+        <Text
+          text={`${formatPlanTime(table.startsAt)} · ${table.areaLabel}`}
+          size="sm"
+          style={themed($mutedText)}
+        />
+        <Text
+          text={table.note || table.vibe}
+          size="sm"
+          numberOfLines={2}
+          style={themed($mutedText)}
+        />
         <View style={themed($momentumRow)}>
           <Text text={`${table.confirmedCount} confirmed`} size="xs" preset="bold" />
           <Text text={`${seatsLeft} seats left`} size="xs" preset="bold" />
@@ -130,14 +159,28 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
           style={themed($map)}
         >
           {tables.map((table) => (
-            <Marker key={table.id} coordinate={table.coordinate} onPress={() => openTable(table.id)}>
-              <View style={[themed($marker), { backgroundColor: statusColor(table.status, colors) }]}>
-                <Text text={formatActivityLabel(table.activity).charAt(0)} preset="bold" style={themed($markerText)} />
+            <Marker
+              key={table.id}
+              coordinate={table.coordinate}
+              onPress={() => openTable(table.id)}
+            >
+              <View
+                style={[themed($marker), { backgroundColor: statusColor(table.status, colors) }]}
+              >
+                <Text
+                  text={formatActivityLabel(table.activity).charAt(0)}
+                  preset="bold"
+                  style={themed($markerText)}
+                />
               </View>
             </Marker>
           ))}
         </MapView>
-        <Button text="Search this area" onPress={() => void loadTables()} style={themed($mapSearchButton)} />
+        <Button
+          text="Search this area"
+          onPress={() => void loadTables()}
+          style={themed($mapSearchButton)}
+        />
       </View>
     )
   }
@@ -170,8 +213,18 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
       </View>
 
       <View style={themed($segmented)}>
-        <Button text="List" preset={mode === "list" ? "filled" : "default"} onPress={() => setMode("list")} style={themed($segmentButton)} />
-        <Button text="Map" preset={mode === "map" ? "filled" : "default"} onPress={() => setMode("map")} style={themed($segmentButton)} />
+        <Button
+          text="List"
+          preset={mode === "list" ? "filled" : "default"}
+          onPress={() => setMode("list")}
+          style={themed($segmentButton)}
+        />
+        <Button
+          text="Map"
+          preset={mode === "map" ? "filled" : "default"}
+          onPress={() => setMode("map")}
+          style={themed($segmentButton)}
+        />
       </View>
 
       {!!error ? <InlineNotice variant="error" text={error} /> : null}
@@ -179,7 +232,10 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
       {!isLoading && !error && tables.length === 0 ? (
         <View style={themed($emptyCard)}>
           <Text text="No nearby tables yet" preset="subheading" />
-          <Text text="Start a small plan for today or tomorrow and let Tably host the momentum." style={themed($mutedText)} />
+          <Text
+            text="Start a small plan for today or tomorrow and let Tably host the momentum."
+            style={themed($mutedText)}
+          />
           <Button text="Create a table" onPress={() => navigation.navigate("CreateTable")} />
         </View>
       ) : null}

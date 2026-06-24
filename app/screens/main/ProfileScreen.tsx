@@ -142,7 +142,11 @@ export const ProfileScreen: FC = () => {
           {avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={$avatarImage} />
           ) : (
-            <Text text={getInitials(displayName, profile?.email ?? "")} preset="bold" style={themed($avatarText)} />
+            <Text
+              text={getInitials(displayName, profile?.email ?? "")}
+              preset="bold"
+              style={themed($avatarText)}
+            />
           )}
         </View>
         <View style={themed($headerCopy)}>
@@ -152,21 +156,47 @@ export const ProfileScreen: FC = () => {
       </View>
 
       <View style={themed($row)}>
-        <Button text={isUploadingAvatar ? "Updating..." : "Change photo"} disabled={isUploadingAvatar} onPress={() => void chooseAvatar()} style={themed($rowButton)} />
-        {profile?.avatar_path ? <Button text="Remove" disabled={isUploadingAvatar} onPress={() => void removeAvatar()} style={themed($rowButton)} /> : null}
+        <Button
+          text={isUploadingAvatar ? "Updating..." : "Change photo"}
+          disabled={isUploadingAvatar}
+          onPress={() => void chooseAvatar()}
+          style={themed($rowButton)}
+        />
+        {profile?.avatar_path ? (
+          <Button
+            text="Remove"
+            disabled={isUploadingAvatar}
+            onPress={() => void removeAvatar()}
+            style={themed($rowButton)}
+          />
+        ) : null}
       </View>
 
       <TextField label="Display name" value={displayName} onChangeText={setDisplayName} />
-      <TextField label="Bio" value={summary} onChangeText={setSummary} multiline placeholder="A short trust-building intro: interests, languages, and what kind of plans you like." />
+      <TextField
+        label="Bio"
+        value={summary}
+        onChangeText={setSummary}
+        multiline
+        placeholder="A short trust-building intro: interests, languages, and what kind of plans you like."
+      />
 
       {!!message ? <InlineNotice variant="success" text={message} /> : null}
       {!!error ? <InlineNotice variant="error" text={error} /> : null}
 
-      <Button text={isSaving ? "Saving..." : "Save profile"} disabled={isSaving} preset="reversed" onPress={() => void saveProfile()} />
+      <Button
+        text={isSaving ? "Saving..." : "Save profile"}
+        disabled={isSaving}
+        preset="reversed"
+        onPress={() => void saveProfile()}
+      />
 
       <View style={themed($settingsCard)}>
         <Text text="Safety and account" preset="subheading" />
-        <Text text="Manage blocked users, password, privacy links, sign out, or delete your account." style={themed($muted)} />
+        <Text
+          text="Manage blocked users, password, privacy links, sign out, or delete your account."
+          style={themed($muted)}
+        />
         <Button text="Open settings" onPress={() => navigation.navigate("Settings")} />
       </View>
     </Screen>

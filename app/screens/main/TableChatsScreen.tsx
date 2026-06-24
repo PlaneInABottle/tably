@@ -7,7 +7,12 @@ import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { listMyActiveTables } from "@/services/tables/tableService"
-import { formatActivityLabel, formatPlanTime, getMemberStatusLabel, getTableStatusLabel } from "@/services/tables/tableUtils"
+import {
+  formatActivityLabel,
+  formatPlanTime,
+  getMemberStatusLabel,
+  getTableStatusLabel,
+} from "@/services/tables/tableUtils"
 import type { ActiveTableChat } from "@/services/tables/types"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
@@ -51,11 +56,22 @@ export const TableChatsScreen: FC<TableChatsScreenProps> = ({ navigation }) => {
         style={themed($row)}
       >
         <View style={themed($avatar)}>
-          <Text text={formatActivityLabel(table.activity).charAt(0)} preset="bold" style={themed($avatarText)} />
+          <Text
+            text={formatActivityLabel(table.activity).charAt(0)}
+            preset="bold"
+            style={themed($avatarText)}
+          />
         </View>
         <View style={themed($center)}>
           <Text text={table.title} preset="bold" numberOfLines={1} />
-          <Text text={table.latestMessageBody || `${formatPlanTime(table.startsAt)} · ${table.areaLabel}`} size="xs" numberOfLines={1} style={themed($muted)} />
+          <Text
+            text={
+              table.latestMessageBody || `${formatPlanTime(table.startsAt)} · ${table.areaLabel}`
+            }
+            size="xs"
+            numberOfLines={1}
+            style={themed($muted)}
+          />
         </View>
         <View style={themed($right)}>
           <Text text={getTableStatusLabel(table.status)} size="xxs" preset="bold" />

@@ -86,7 +86,8 @@ type ActiveChatRow = {
 function normalizeError(message?: string): string {
   if (!message) return "Table request failed. Please try again."
   if (message.includes("Authentication required")) return "Please sign in to use Tably."
-  if (message.includes("today or tomorrow")) return "Tables can only be created for today or tomorrow."
+  if (message.includes("today or tomorrow"))
+    return "Tables can only be created for today or tomorrow."
   if (message.includes("Invalid activity")) return "Choose a supported activity."
   if (message.includes("Invalid coordinates")) return "Choose a supported location."
   if (message.includes("Table not found")) return "This table is no longer available."

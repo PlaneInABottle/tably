@@ -1,5 +1,13 @@
 import { FC, useCallback, useEffect, useRef, useState } from "react"
-import { Alert, KeyboardAvoidingView, Platform, Pressable, TextStyle, View, ViewStyle } from "react-native"
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  TextStyle,
+  View,
+  ViewStyle,
+} from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useFocusEffect } from "@react-navigation/native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -25,7 +33,12 @@ import {
   sendTableMessage,
   subscribeToTableMessages,
 } from "@/services/tables/tableService"
-import { formatActivityLabel, formatPlanTime, getMemberStatusLabel, getTableStatusLabel } from "@/services/tables/tableUtils"
+import {
+  formatActivityLabel,
+  formatPlanTime,
+  getMemberStatusLabel,
+  getTableStatusLabel,
+} from "@/services/tables/tableUtils"
 import type { SocialTableDetail, TableMember, TableMessage } from "@/services/tables/types"
 import { useAppTheme } from "@/theme/context"
 import { spacing } from "@/theme/spacing"
@@ -72,7 +85,11 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
     if (membersResult.ok) setMembers(membersResult.data)
 
     const currentStatus = detailResult.ok ? detailResult.data.myMemberStatus : null
-    if (currentStatus === "pending_intro" || currentStatus === "pending_confirm" || currentStatus === "confirmed") {
+    if (
+      currentStatus === "pending_intro" ||
+      currentStatus === "pending_confirm" ||
+      currentStatus === "confirmed"
+    ) {
       const messagesResult = await listTableMessages(tableId)
       if (mounted.current && messagesResult.ok) setMessages(messagesResult.data)
     }
@@ -110,7 +127,11 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
       setError(result.error)
       return
     }
-    setMessage(result.data.isWaitlisted ? "This table is full, so you are on the waitlist." : "Seat held. Answer the intro to keep it.")
+    setMessage(
+      result.data.isWaitlisted
+        ? "This table is full, so you are on the waitlist."
+        : "Seat held. Answer the intro to keep it.",
+    )
     await load()
   }
 
@@ -196,14 +217,18 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
 
   function confirmBlockCreator() {
     if (!table) return
-    Alert.alert("Block creator?", `You will stop seeing tables from ${table.creator.displayName}.`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Block",
-        style: "destructive",
-        onPress: () => void handleBlockCreator(),
-      },
-    ])
+    Alert.alert(
+      "Block creator?",
+      `You will stop seeing tables from ${table.creator.displayName}.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: () => void handleBlockCreator(),
+        },
+      ],
+    )
   }
 
   async function handleBlockCreator() {
@@ -223,7 +248,12 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
     return (
       <View key={member.profileId} style={themed($memberPill)}>
         <View style={themed($memberAvatar)}>
-          <Text text={member.displayName.charAt(0).toUpperCase()} size="xs" preset="bold" style={themed($avatarText)} />
+          <Text
+            text={member.displayName.charAt(0).toUpperCase()}
+            size="xs"
+            preset="bold"
+            style={themed($avatarText)}
+          />
         </View>
         <View style={themed($memberCopy)}>
           <Text text={member.displayName} size="xs" preset="bold" numberOfLines={1} />
@@ -249,10 +279,22 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
   const canChat = status === "pending_confirm" || status === "confirmed"
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={themed($keyboard)}>
-      <Screen preset="auto" backgroundColor={colors.palette.neutral100} contentContainerStyle={themed($container)}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={themed($keyboard)}
+    >
+      <Screen
+        preset="auto"
+        backgroundColor={colors.palette.neutral100}
+        contentContainerStyle={themed($container)}
+      >
         <View style={[themed($header), { paddingTop: insets.top + spacing.xs }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => navigation.goBack()} style={themed($backButton)}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            onPress={() => navigation.goBack()}
+            style={themed($backButton)}
+          >
             <Ionicons name="chevron-back" size={28} color={colors.text} />
           </Pressable>
           <Text text="Table" preset="heading" size="md" />
@@ -266,18 +308,34 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
         {table ? (
           <>
             <View style={themed($planCard)}>
-              <Text text={formatActivityLabel(table.activity)} size="xs" preset="bold" style={themed($accent)} />
+              <Text
+                text={formatActivityLabel(table.activity)}
+                size="xs"
+                preset="bold"
+                style={themed($accent)}
+              />
               <Text text={table.title} preset="heading" />
-              <Text text={`${formatPlanTime(table.startsAt)} · ${table.areaLabel}`} style={themed($muted)} />
+              <Text
+                text={`${formatPlanTime(table.startsAt)} · ${table.areaLabel}`}
+                style={themed($muted)}
+              />
               <Text text={table.note || table.vibe} />
               <View style={themed($statusRow)}>
                 <Text text={getTableStatusLabel(table.status)} size="xs" preset="bold" />
                 <Text text={getMemberStatusLabel(status)} size="xs" preset="bold" />
               </View>
               <View style={themed($safetyRow)}>
-                <Button text="Report table" onPress={() => openReportReasons("table", table.id)} style={themed($safetyButton)} />
+                <Button
+                  text="Report table"
+                  onPress={() => openReportReasons("table", table.id)}
+                  style={themed($safetyButton)}
+                />
                 {table.creator.id !== user?.id ? (
-                  <Button text="Block creator" onPress={confirmBlockCreator} style={themed($safetyButton)} />
+                  <Button
+                    text="Block creator"
+                    onPress={confirmBlockCreator}
+                    style={themed($safetyButton)}
+                  />
                 ) : null}
               </View>
             </View>
@@ -290,38 +348,83 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
             {!status && !table.isWaitlisted ? (
               <View style={themed($actionCard)}>
                 <Text text="Join this table" preset="subheading" />
-                <Text text="Tably will hold your seat while you answer the intro prompt." style={themed($muted)} />
-                <Button text={isBusy ? "Joining..." : "Join"} disabled={isBusy} preset="reversed" onPress={() => void handleJoin()} />
+                <Text
+                  text="Tably will hold your seat while you answer the intro prompt."
+                  style={themed($muted)}
+                />
+                <Button
+                  text={isBusy ? "Joining..." : "Join"}
+                  disabled={isBusy}
+                  preset="reversed"
+                  onPress={() => void handleJoin()}
+                />
               </View>
             ) : null}
 
-            {table.isWaitlisted ? <InlineNotice variant="info" text="You are on the waitlist. Tably will promote you if a seat opens." /> : null}
+            {table.isWaitlisted ? (
+              <InlineNotice
+                variant="info"
+                text="You are on the waitlist. Tably will promote you if a seat opens."
+              />
+            ) : null}
 
             {status === "pending_intro" ? (
               <View style={themed($actionCard)}>
                 <Text text="Next action" preset="subheading" />
                 <Text text={table.introPrompt} />
-                <TextField value={introAnswer} onChangeText={setIntroAnswer} placeholder="A short answer is enough." multiline />
-                <Button text={isBusy ? "Saving..." : "Save intro"} disabled={isBusy} preset="reversed" onPress={() => void handleIntro()} />
+                <TextField
+                  value={introAnswer}
+                  onChangeText={setIntroAnswer}
+                  placeholder="A short answer is enough."
+                  multiline
+                />
+                <Button
+                  text={isBusy ? "Saving..." : "Save intro"}
+                  disabled={isBusy}
+                  preset="reversed"
+                  onPress={() => void handleIntro()}
+                />
               </View>
             ) : null}
 
             {status === "pending_confirm" ? (
               <View style={themed($actionCard)}>
                 <Text text="Confirm your seat" preset="subheading" />
-                <Text text="Confirmed seats tell everyone this plan is real." style={themed($muted)} />
-                <Button text={isBusy ? "Confirming..." : "Confirm attendance"} disabled={isBusy} preset="reversed" onPress={() => void handleConfirm()} />
+                <Text
+                  text="Confirmed seats tell everyone this plan is real."
+                  style={themed($muted)}
+                />
+                <Button
+                  text={isBusy ? "Confirming..." : "Confirm attendance"}
+                  disabled={isBusy}
+                  preset="reversed"
+                  onPress={() => void handleConfirm()}
+                />
               </View>
             ) : null}
 
             {canChat ? (
               <View style={themed($section)}>
                 <Text text="Guided chat" preset="subheading" />
-                {messages.length === 0 ? <Text text="Start with arrival time, venue details, or what you want the vibe to be." style={themed($muted)} /> : null}
+                {messages.length === 0 ? (
+                  <Text
+                    text="Start with arrival time, venue details, or what you want the vibe to be."
+                    style={themed($muted)}
+                  />
+                ) : null}
                 {messages.map(renderMessage)}
                 <View style={themed($composer)}>
-                  <TextField value={draft} onChangeText={setDraft} placeholder="Message the table" containerStyle={themed($composerInput)} />
-                  <Button text="Send" disabled={isBusy || draft.trim().length === 0} onPress={() => void handleSend()} />
+                  <TextField
+                    value={draft}
+                    onChangeText={setDraft}
+                    placeholder="Message the table"
+                    containerStyle={themed($composerInput)}
+                  />
+                  <Button
+                    text="Send"
+                    disabled={isBusy || draft.trim().length === 0}
+                    onPress={() => void handleSend()}
+                  />
                 </View>
                 <Button text="Leave table" onPress={() => void handleLeave()} />
               </View>

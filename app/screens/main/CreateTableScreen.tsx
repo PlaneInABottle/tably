@@ -9,8 +9,8 @@ import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { createSocialTable } from "@/services/tables/tableService"
-import { ACTIVITY_TYPES, type ActivityType } from "@/services/tables/types"
 import { formatActivityLabel } from "@/services/tables/tableUtils"
+import { ACTIVITY_TYPES, type ActivityType } from "@/services/tables/types"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 
@@ -45,7 +45,7 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
 
   const startsAt = useMemo(() => buildStartsAt(day, time), [day, time])
 
-  async function useCurrentLocation() {
+  async function applyCurrentLocation() {
     setError("")
     setLocationMessage("")
     const permission = await Location.requestForegroundPermissionsAsync()
@@ -90,33 +90,68 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
   return (
     <Screen preset="auto" safeAreaEdges={["top"]} contentContainerStyle={themed($container)}>
       <Text text="Create a table" preset="heading" />
-      <Text text="Keep it structured. Tably will handle the prompts and confirmations." style={themed($muted)} />
+      <Text
+        text="Keep it structured. Tably will handle the prompts and confirmations."
+        style={themed($muted)}
+      />
 
       <Text text="Activity" preset="bold" />
       <View style={themed($chips)}>
         {ACTIVITY_TYPES.map((item) => (
-          <Pressable key={item} onPress={() => {
-            setActivity(item)
-            setTitle(`${formatActivityLabel(item)} table`)
-          }} style={themed([$chip, activity === item && $chipActive])}>
-            <Text text={formatActivityLabel(item)} size="xs" preset="bold" style={themed(activity === item ? $chipTextActive : $chipText)} />
+          <Pressable
+            key={item}
+            onPress={() => {
+              setActivity(item)
+              setTitle(`${formatActivityLabel(item)} table`)
+            }}
+            style={themed([$chip, activity === item && $chipActive])}
+          >
+            <Text
+              text={formatActivityLabel(item)}
+              size="xs"
+              preset="bold"
+              style={themed(activity === item ? $chipTextActive : $chipText)}
+            />
           </Pressable>
         ))}
       </View>
 
       <TextField label="Title" value={title} onChangeText={setTitle} />
-      <TextField label="Area" value={areaLabel} onChangeText={setAreaLabel} placeholder="Kadikoy, Moda, Nisantasi..." />
+      <TextField
+        label="Area"
+        value={areaLabel}
+        onChangeText={setAreaLabel}
+        placeholder="Kadikoy, Moda, Nisantasi..."
+      />
 
       <Text text="When" preset="bold" />
       <View style={themed($chips)}>
         {(["today", "tomorrow"] as const).map((item) => (
-          <Pressable key={item} onPress={() => setDay(item)} style={themed([$chip, day === item && $chipActive])}>
-            <Text text={item === "today" ? "Today" : "Tomorrow"} size="xs" preset="bold" style={themed(day === item ? $chipTextActive : $chipText)} />
+          <Pressable
+            key={item}
+            onPress={() => setDay(item)}
+            style={themed([$chip, day === item && $chipActive])}
+          >
+            <Text
+              text={item === "today" ? "Today" : "Tomorrow"}
+              size="xs"
+              preset="bold"
+              style={themed(day === item ? $chipTextActive : $chipText)}
+            />
           </Pressable>
         ))}
         {TIMES.map((item) => (
-          <Pressable key={item} onPress={() => setTime(item)} style={themed([$chip, time === item && $chipActive])}>
-            <Text text={item} size="xs" preset="bold" style={themed(time === item ? $chipTextActive : $chipText)} />
+          <Pressable
+            key={item}
+            onPress={() => setTime(item)}
+            style={themed([$chip, time === item && $chipActive])}
+          >
+            <Text
+              text={item}
+              size="xs"
+              preset="bold"
+              style={themed(time === item ? $chipTextActive : $chipText)}
+            />
           </Pressable>
         ))}
       </View>
@@ -124,8 +159,17 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
       <Text text="Vibe" preset="bold" />
       <View style={themed($chips)}>
         {VIBES.map((item) => (
-          <Pressable key={item} onPress={() => setVibe(item)} style={themed([$chip, vibe === item && $chipActive])}>
-            <Text text={item} size="xs" preset="bold" style={themed(vibe === item ? $chipTextActive : $chipText)} />
+          <Pressable
+            key={item}
+            onPress={() => setVibe(item)}
+            style={themed([$chip, vibe === item && $chipActive])}
+          >
+            <Text
+              text={item}
+              size="xs"
+              preset="bold"
+              style={themed(vibe === item ? $chipTextActive : $chipText)}
+            />
           </Pressable>
         ))}
       </View>
@@ -133,17 +177,37 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
       <Text text="Seats" preset="bold" />
       <View style={themed($chips)}>
         {[3, 4, 5, 6].map((item) => (
-          <Pressable key={item} onPress={() => setMaxSeats(item)} style={themed([$chip, maxSeats === item && $chipActive])}>
-            <Text text={`${item}`} size="xs" preset="bold" style={themed(maxSeats === item ? $chipTextActive : $chipText)} />
+          <Pressable
+            key={item}
+            onPress={() => setMaxSeats(item)}
+            style={themed([$chip, maxSeats === item && $chipActive])}
+          >
+            <Text
+              text={`${item}`}
+              size="xs"
+              preset="bold"
+              style={themed(maxSeats === item ? $chipTextActive : $chipText)}
+            />
           </Pressable>
         ))}
       </View>
 
-      <TextField label="Note" value={note} onChangeText={setNote} multiline placeholder="Short context. Example: easy pace, subtitles, casual after-work coffee." />
-      <Button text="Use current location" onPress={() => void useCurrentLocation()} />
+      <TextField
+        label="Note"
+        value={note}
+        onChangeText={setNote}
+        multiline
+        placeholder="Short context. Example: easy pace, subtitles, casual after-work coffee."
+      />
+      <Button text="Use current location" onPress={() => void applyCurrentLocation()} />
       {!!locationMessage ? <InlineNotice variant="success" text={locationMessage} /> : null}
       {!!error ? <InlineNotice variant="error" text={error} /> : null}
-      <Button text={isSaving ? "Creating..." : "Create table"} disabled={isSaving} preset="reversed" onPress={() => void save()} />
+      <Button
+        text={isSaving ? "Creating..." : "Create table"}
+        disabled={isSaving}
+        preset="reversed"
+        onPress={() => void save()}
+      />
     </Screen>
   )
 }

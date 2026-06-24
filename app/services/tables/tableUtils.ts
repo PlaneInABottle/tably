@@ -55,7 +55,12 @@ export function formatPlanTime(value: string): string {
   const today = new Date()
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
-  const day = date.toDateString() === today.toDateString() ? "Today" : date.toDateString() === tomorrow.toDateString() ? "Tomorrow" : date.toLocaleDateString(undefined, { weekday: "short" })
+  const day =
+    date.toDateString() === today.toDateString()
+      ? "Today"
+      : date.toDateString() === tomorrow.toDateString()
+        ? "Tomorrow"
+        : date.toLocaleDateString(undefined, { weekday: "short" })
 
   return `${day} ${date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`
 }
