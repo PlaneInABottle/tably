@@ -51,7 +51,7 @@ drop constraint if exists moderation_reports_target_type_check;
 
 alter table public.moderation_reports
 add constraint moderation_reports_target_type_check
-check (target_type in ('profile', 'table', 'table_message', 'message', 'conversation'));
+check (target_type in ('profile', 'dive', 'table', 'table_message', 'message', 'conversation'));
 
 create index if not exists social_tables_starts_at_idx on public.social_tables (starts_at);
 create index if not exists social_tables_location_gix on public.social_tables using gist (location);

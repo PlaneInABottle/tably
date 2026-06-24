@@ -1,12 +1,12 @@
 import { FC, useCallback, useMemo, useRef, useState } from "react"
-import { Pressable, RefreshControl, TextStyle, View, ViewStyle } from "react-native"
+import { Pressable, RefreshControl, ScrollView, TextStyle, View, ViewStyle } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useFocusEffect } from "@react-navigation/native"
 import MapView, { Marker, type Region } from "react-native-maps"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Button } from "@/components/Button"
 import { InlineNotice } from "@/components/InlineNotice"
-import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { listSocialTables } from "@/services/tables/tableService"
@@ -44,12 +44,13 @@ function statusColor(
 
 export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
   const mapRef = useRef<MapView>(null)
+  const regionRef = useRef<Region>(ISTANBUL_REGION)
   const {
     themed,
     theme: { colors },
   } = useAppTheme()
+  const insets = useSafeAreaInsets()
   const [mode, setMode] = useState<ViewMode>("list")
-  const [region, setRegion] = useState<Region>(ISTANBUL_REGION)
   const [tables, setTables] = useState<SocialTableSummary[]>([])
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -67,28 +68,25 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
     [tables],
   )
 
-  const loadTables = useCallback(
-    async (refreshing = false) => {
-      setError("")
-      if (refreshing) setIsRefreshing(true)
-      else setIsLoading(true)
+  const loadTables = useCallback(async (refreshing = false) => {
+    setError("")
+    if (refreshing) setIsRefreshing(true)
+    else setIsLoading(true)
 
-      const bounds = calculateBounds(region)
-      if (!bounds.ok) {
-        setError(bounds.error)
-        setIsLoading(false)
-        setIsRefreshing(false)
-        return
-      }
-
-      const result = await listSocialTables({ bounds: bounds.bounds })
-      if (result.ok) setTables(result.data)
-      else setError(result.error)
+    const bounds = calculateBounds(regionRef.current)
+    if (!bounds.ok) {
+      setError(bounds.error)
       setIsLoading(false)
       setIsRefreshing(false)
-    },
-    [region],
-  )
+      return
+    }
+
+    const result = await listSocialTables({ bounds: bounds.bounds })
+    if (result.ok) setTables(result.data)
+    else setError(result.error)
+    setIsLoading(false)
+    setIsRefreshing(false)
+  }, [])
 
   useFocusEffect(
     useCallback(() => {
@@ -155,7 +153,9 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
         <MapView
           ref={mapRef}
           initialRegion={ISTANBUL_REGION}
-          onRegionChangeComplete={setRegion}
+          onRegionChangeComplete={(nextRegion) => {
+            regionRef.current = nextRegion
+          }}
           style={themed($map)}
         >
           {tables.map((table) => (
@@ -177,25 +177,20 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
           ))}
         </MapView>
         <Button
-          text="Search this area"
+          text={isLoading ? "Searching..." : "Search this area"}
           onPress={() => void loadTables()}
+          disabled={isLoading}
           style={themed($mapSearchButton)}
         />
       </View>
     )
   }
 
+  const showInitialLoading = isLoading && tables.length === 0
+  const canShowContent = !error && (!isLoading || tables.length > 0)
+
   return (
-    <Screen
-      preset={mode === "map" ? "fixed" : "auto"}
-      safeAreaEdges={["top"]}
-      contentContainerStyle={themed($container)}
-      ScrollViewProps={{
-        refreshControl: (
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => void loadTables(true)} />
-        ),
-      }}
-    >
+    <View style={themed($root(insets.top))}>
       <View style={themed($header)}>
         <View>
           <Text text="Today" preset="heading" />
@@ -228,8 +223,10 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
       </View>
 
       {!!error ? <InlineNotice variant="error" text={error} /> : null}
-      {isLoading ? <Text text="Finding nearby tables..." style={themed($mutedText)} /> : null}
-      {!isLoading && !error && tables.length === 0 ? (
+      {showInitialLoading ? (
+        <Text text="Finding nearby tables..." style={themed($mutedText)} />
+      ) : null}
+      {canShowContent && tables.length === 0 ? (
         <View style={themed($emptyCard)}>
           <Text text="No nearby tables yet" preset="subheading" />
           <Text
@@ -239,16 +236,35 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
           <Button text="Create a table" onPress={() => navigation.navigate("CreateTable")} />
         </View>
       ) : null}
-      {!isLoading && mode === "list" ? sortedTables.map(renderTableCard) : null}
-      {!isLoading && mode === "map" ? renderMap() : null}
-    </Screen>
+      {canShowContent && mode === "list" ? (
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={() => void loadTables(true)} />
+          }
+          contentContainerStyle={themed($listContent)}
+        >
+          {sortedTables.map(renderTableCard)}
+        </ScrollView>
+      ) : null}
+      {canShowContent && mode === "map" ? renderMap() : null}
+    </View>
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  flexGrow: 1,
+const $root =
+  (topInset: number): ThemedStyle<ViewStyle> =>
+  ({ colors, spacing }) => ({
+    backgroundColor: colors.background,
+    flex: 1,
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: topInset + spacing.lg,
+  })
+
+const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   gap: spacing.md,
-  padding: spacing.lg,
+  paddingBottom: spacing.lg,
 })
 
 const $header: ThemedStyle<ViewStyle> = () => ({
