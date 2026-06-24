@@ -9,6 +9,12 @@ appId: ${MAESTRO_APP_ID}
       - waitForAnimationToEnd
 - runFlow:
     when:
+      visible: "Tably"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
       visible: "DEVELOPMENT SERVERS"
     commands:
       - tapOn: "Enter URL manually"

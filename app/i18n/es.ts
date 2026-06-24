@@ -208,7 +208,7 @@ const es: Translations = {
   },
   signInScreen: {
     title: "Sign in",
-    subtitle: "Find local diving buddies and plan your next dive.",
+    subtitle: "Find nearby tables and turn plans into confirmed meetups.",
     emailLabel: "Email",
     passwordLabel: "Password",
     signInButton: "Sign in",

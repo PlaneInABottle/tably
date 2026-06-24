@@ -1,0 +1,94 @@
+appId: ${MAESTRO_APP_ID}
+tags:
+  - core
+  - table
+  - ios
+onFlowStart:
+  - runFlow: ../shared/_OnFlowStart.yaml
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+  DISPLAY_NAME: ${DISPLAY_NAME}
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "sign-in-create-account-button"
+- tapOn:
+    id: "display-name-input"
+- inputText: ${DISPLAY_NAME}
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "sign-up-terms-checkbox"
+- tapOn:
+    id: "sign-up-submit-button"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
+- tapOn:
+    id: "tab-create"
+- extendedWaitUntil:
+    visible: "Create a table"
+    timeout: 10000
+- tapOn: "Coffee"
+- tapOn: "Tomorrow"
+- tapOn: "20:30"
+- scrollUntilVisible:
+    element: "Create table"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Create table"
+- extendedWaitUntil:
+    visible: "Table"
+    timeout: 30000
+- assertVisible: "Coffee table"
+- assertVisible: "Needs intro"
+- tapOn: "A short answer is enough."
+- inputText: "Easy conversation and a calm coffee plan."
+- hideKeyboard
+- tapOn: "Save intro"
+- extendedWaitUntil:
+    visible: "Needs confirm"
+    timeout: 30000
+- tapOn: "Confirm attendance"
+- extendedWaitUntil:
+    visible: "You are confirmed."
+    timeout: 30000
+- tapOn:
+    point: "35%,73%"
+- inputText: "I can arrive ten minutes early."
+- hideKeyboard
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible: "I can arrive ten minutes early."
+    timeout: 30000
+- tapOn: "Back"
+- waitForAnimationToEnd
+- tapOn:
+    id: "tab-chats"
+- extendedWaitUntil:
+    visible: "Open Coffee table"
+    timeout: 30000
+- tapOn:
+    id: "tab-today"
+- extendedWaitUntil:
+    visible: "Today"
+    timeout: 30000
+- tapOn: "List"
+- assertVisible: "Open Coffee table"
+- tapOn: "Map"
+- extendedWaitUntil:
+    visible: "Search this area"
+    timeout: 30000
+- assertVisible: "Map pin"
+- takeScreenshot: "tably-core-table-flow"
