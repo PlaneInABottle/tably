@@ -3,13 +3,13 @@ export const REPORT_REASONS = [
   "Hate or discrimination",
   "Sexual content",
   "Spam or scam",
-  "Unsafe diving behavior",
+  "Unsafe meetup behavior",
   "Other",
 ] as const
 
 export type ReportReason = (typeof REPORT_REASONS)[number]
 
-export type ReportTargetType = "profile" | "dive" | "message" | "conversation"
+export type ReportTargetType = "profile" | "table" | "table_message" | "message" | "conversation"
 
 export type ReportInput = {
   targetType: ReportTargetType

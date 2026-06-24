@@ -14,15 +14,13 @@ Use these repo-specific instructions in addition to the global Codex instruction
 
 Load the relevant project skill before changing code in these areas:
 
-- `.agents/skills/diving-buddies-map/SKILL.md` for Map screen work, marker taps, `react-native-maps`, bottom sheets, location search, and map Maestro flows.
-- `.agents/skills/diving-buddies-supabase-safety/SKILL.md` for Supabase migrations/RPCs, blocking, reporting, chat safety, account deletion, and RLS-sensitive work.
-- `.agents/skills/diving-buddies-maestro-release/SKILL.md` for simulator control, Maestro verification, screenshot flows, EAS/App Store release checks, and PM2 runtime handling.
+- `.agents/skills/tably-mobile/SKILL.md` for table discovery, map/list UI, Supabase table RPCs, guided chat, join/confirmation flows, safety, and Maestro verification.
 
 ## Code Patterns
 
 - Keep UI inside the existing Ignite-style structure: screens in `app/screens`, reusable UI in `app/components`, services in `app/services`, route types in `app/navigators/navigationTypes.ts`.
 - Use `useAppTheme()` and `ThemedStyle` for styles. Prefer existing components such as `Text`, `Button`, `InlineNotice`, `AppToasts`, map components, and screen wrappers.
-- Put user-facing strings in `app/i18n/*.ts`; do not hard-code visible text unless the surrounding code already does.
+- Prefer `app/i18n/*.ts` for polished flows. Early Tably v1 screens may use local strings while the domain is moving quickly; consolidate them before release.
 - Service functions return `ServiceResult`-style discriminated unions. Normalize backend errors in the service that owns the call.
 - Supabase app code should generally call RPCs or Edge Functions, not raw table mutations, unless a migration/service contract explicitly supports it.
 - When touching external-library behavior that is subtle, check Context7 or official docs first. This especially applies to `@gorhom/bottom-sheet`, `react-native-maps`, Supabase, EAS, and Expo APIs.

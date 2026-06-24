@@ -38,7 +38,7 @@ module.exports = ({ config }: ConfigContext): Partial<ExpoConfig> => {
       infoPlist: {
         ...config.ios?.infoPlist,
         NSLocationWhenInUseUsageDescription:
-          "Tably uses your location to show nearby divers when you choose to save it.",
+          "Tably uses your location when you choose to place or discover nearby small-group plans.",
       },
     },
     plugins: [...existingPlugins, "expo-secure-store"],

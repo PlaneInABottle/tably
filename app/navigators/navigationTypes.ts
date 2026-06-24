@@ -33,6 +33,7 @@ export type AppStackParamList = {
   UpdatePassword: undefined
   Main: NavigatorScreenParams<MainTabParamList>
   ChangePassword: undefined
+  Settings: undefined
   TableDetail: {
     tableId: string
   }

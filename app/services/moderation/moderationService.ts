@@ -42,10 +42,10 @@ type BlockedUserRow = {
 function normalizeModerationError(message?: string): string {
   if (!message) return "Safety request failed. Please try again."
   if (message.includes("Authentication required")) return "Please sign in to use safety tools."
-  if (message.includes("blocked")) return "This diver is blocked."
+  if (message.includes("blocked")) return "This member is blocked."
   if (message.includes("Report")) return message
   if (message.includes("Content contains")) return "This content cannot be shared."
-  if (message.includes("User was not found")) return "Diver was not found."
+  if (message.includes("User was not found")) return "Member was not found."
   return "Safety request failed. Please try again."
 }
 
@@ -67,7 +67,7 @@ function normalizeBlock(row: BlockUserRow): BlockUserResult {
 function normalizeBlockedUser(row: BlockedUserRow): BlockedUser {
   return {
     id: row.blocked_id,
-    displayName: row.display_name || "Diver",
+    displayName: row.display_name || "Tably member",
     summary: row.summary,
     avatarPath: row.avatar_path,
     createdAt: row.created_at,
@@ -98,7 +98,7 @@ export async function blockUser(
   })
 
   if (error) return { ok: false, error: normalizeModerationError(error.message) }
-  if (!data?.[0]) return { ok: false, error: "Diver was not blocked." }
+  if (!data?.[0]) return { ok: false, error: "Member was not blocked." }
 
   return { ok: true, data: normalizeBlock(data[0] as BlockUserRow) }
 }

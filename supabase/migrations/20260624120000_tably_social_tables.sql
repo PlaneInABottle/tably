@@ -46,6 +46,13 @@ create table if not exists public.table_messages (
   updated_at timestamptz not null default now()
 );
 
+alter table public.moderation_reports
+drop constraint if exists moderation_reports_target_type_check;
+
+alter table public.moderation_reports
+add constraint moderation_reports_target_type_check
+check (target_type in ('profile', 'table', 'table_message', 'message', 'conversation'));
+
 create index if not exists social_tables_starts_at_idx on public.social_tables (starts_at);
 create index if not exists social_tables_location_gix on public.social_tables using gist (location);
 create index if not exists table_members_profile_idx on public.table_members (profile_id, status);
@@ -559,3 +566,101 @@ grant execute on function public.leave_social_table(uuid) to authenticated;
 grant execute on function public.list_my_active_tables() to authenticated;
 grant execute on function public.list_table_messages(uuid) to authenticated;
 grant execute on function public.send_table_message(uuid, text) to authenticated;
+
+create or replace function public.submit_report(
+  p_target_type text,
+  p_target_id uuid,
+  p_reason text,
+  p_details text default ''
+)
+returns table (
+  id uuid,
+  status text,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_reporter_id uuid := auth.uid();
+  v_target_type text := btrim(coalesce(p_target_type, ''));
+  v_reason text := btrim(coalesce(p_reason, ''));
+  v_details text := btrim(coalesce(p_details, ''));
+  v_target_owner_id uuid;
+  v_report public.moderation_reports;
+begin
+  if v_reporter_id is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if v_target_type not in ('profile', 'table', 'table_message', 'message', 'conversation') then
+    raise exception 'Report target is invalid';
+  end if;
+
+  if v_reason not in (
+    'Harassment or abuse',
+    'Hate or discrimination',
+    'Sexual content',
+    'Spam or scam',
+    'Unsafe meetup behavior',
+    'Other'
+  ) then
+    raise exception 'Report reason is invalid';
+  end if;
+
+  if char_length(v_details) > 1000 then
+    raise exception 'Report details must be 1000 characters or fewer';
+  end if;
+
+  if v_target_type = 'profile' then
+    select p.id into v_target_owner_id
+    from public.profiles p
+    where p.id = p_target_id;
+  elsif v_target_type = 'table' then
+    select st.created_by into v_target_owner_id
+    from public.social_tables st
+    where st.id = p_target_id;
+  elsif v_target_type = 'table_message' then
+    select tm.sender_id into v_target_owner_id
+    from public.table_messages tm
+    where tm.id = p_target_id;
+  elsif v_target_type = 'message' then
+    select m.sender_id into v_target_owner_id
+    from public.messages m
+    where m.id = p_target_id;
+  elsif v_target_type = 'conversation' then
+    select cp.profile_id into v_target_owner_id
+    from public.conversation_participants cp
+    where cp.conversation_id = p_target_id
+      and cp.profile_id <> v_reporter_id
+    limit 1;
+  end if;
+
+  if v_target_owner_id is null then
+    raise exception 'Report target was not found';
+  end if;
+
+  insert into public.moderation_reports (
+    reporter_id,
+    target_type,
+    target_id,
+    target_owner_id,
+    reason,
+    details
+  )
+  values (
+    v_reporter_id,
+    v_target_type,
+    p_target_id,
+    v_target_owner_id,
+    v_reason,
+    v_details
+  )
+  returning * into v_report;
+
+  return query select v_report.id, v_report.status, v_report.created_at;
+end;
+$$;
+
+grant execute on function public.submit_report(text, uuid, text, text) to authenticated;

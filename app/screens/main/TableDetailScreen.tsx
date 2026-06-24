@@ -1,5 +1,5 @@
 import { FC, useCallback, useEffect, useRef, useState } from "react"
-import { KeyboardAvoidingView, Platform, Pressable, TextStyle, View, ViewStyle } from "react-native"
+import { Alert, KeyboardAvoidingView, Platform, Pressable, TextStyle, View, ViewStyle } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useFocusEffect } from "@react-navigation/native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -11,6 +11,9 @@ import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
 import { useAuth } from "@/context/AuthContext"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
+import { blockUser, REPORT_REASONS, submitReport } from "@/services/moderation/moderationService"
+import type { ReportReason } from "@/services/moderation/types"
+import { showSuccessToast } from "@/services/notifications/toastService"
 import {
   answerTableIntro,
   confirmTableAttendance,
@@ -166,6 +169,56 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
     setDraft("")
   }
 
+  function openReportReasons(targetType: "table" | "table_message", targetId: string) {
+    Alert.alert("Report", "Choose the closest reason.", [
+      ...REPORT_REASONS.map((reason) => ({
+        text: reason,
+        onPress: () => void handleReport(targetType, targetId, reason),
+      })),
+      { text: "Cancel", style: "cancel" as const },
+    ])
+  }
+
+  async function handleReport(
+    targetType: "table" | "table_message",
+    targetId: string,
+    reason: ReportReason,
+  ) {
+    setError("")
+    const result = await submitReport({ targetType, targetId, reason })
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+
+    showSuccessToast("Report submitted")
+  }
+
+  function confirmBlockCreator() {
+    if (!table) return
+    Alert.alert("Block creator?", `You will stop seeing tables from ${table.creator.displayName}.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Block",
+        style: "destructive",
+        onPress: () => void handleBlockCreator(),
+      },
+    ])
+  }
+
+  async function handleBlockCreator() {
+    if (!table) return
+    setError("")
+    const result = await blockUser(table.creator.id)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+
+    showSuccessToast("Member blocked")
+    navigation.goBack()
+  }
+
   function renderMember(member: TableMember) {
     return (
       <View key={member.profileId} style={themed($memberPill)}>
@@ -220,6 +273,12 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
               <View style={themed($statusRow)}>
                 <Text text={getTableStatusLabel(table.status)} size="xs" preset="bold" />
                 <Text text={getMemberStatusLabel(status)} size="xs" preset="bold" />
+              </View>
+              <View style={themed($safetyRow)}>
+                <Button text="Report table" onPress={() => openReportReasons("table", table.id)} style={themed($safetyButton)} />
+                {table.creator.id !== user?.id ? (
+                  <Button text="Block creator" onPress={confirmBlockCreator} style={themed($safetyButton)} />
+                ) : null}
               </View>
             </View>
 
@@ -315,6 +374,15 @@ const $statusRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   flexWrap: "wrap",
   gap: spacing.md,
+})
+
+const $safetyRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  gap: spacing.sm,
+})
+
+const $safetyButton: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
 })
 
 const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({

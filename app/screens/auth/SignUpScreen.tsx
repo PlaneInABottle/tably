@@ -107,7 +107,7 @@ export const SignUpScreen: FC<SignUpScreenProps> = ({ navigation }) => {
           tx="settingsScreen:terms"
           accessibilityLabel="Open terms"
           testID="sign-up-terms-link"
-          onPress={() => Linking.openURL("https://divingbuddies.app/terms")}
+          onPress={() => Linking.openURL("https://tably.app/terms")}
           style={themed($inlineLinkButton)}
           textStyle={themed($linkButtonText)}
         />
@@ -115,7 +115,7 @@ export const SignUpScreen: FC<SignUpScreenProps> = ({ navigation }) => {
           tx="settingsScreen:privacy"
           accessibilityLabel="Open privacy policy"
           testID="sign-up-privacy-link"
-          onPress={() => Linking.openURL("https://divingbuddies.app/privacy")}
+          onPress={() => Linking.openURL("https://tably.app/privacy")}
           style={themed($inlineLinkButton)}
           textStyle={themed($linkButtonText)}
         />
