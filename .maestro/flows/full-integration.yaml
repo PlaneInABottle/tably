@@ -1,0 +1,226 @@
+appId: ${MAESTRO_APP_ID}
+onFlowStart:
+  # Note: _OnFlowStart.yaml runs `clearState: true` which is incompatible
+  # with the Expo dev launcher. When running against a development build
+  # launched via Metro, this flow assumes the user is not already signed
+  # in OR that the prior `clearState: true` failed silently (in which case
+  # the sign-in steps below will surface the sign-in screen). For IPA
+  # builds the `onFlowStart` line is required and is therefore preserved.
+  - runFlow: ../shared/_OnFlowStart.yaml
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+  DISPLAY_NAME: ${DISPLAY_NAME}
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "sign-in-create-account-button"
+- tapOn:
+    id: "display-name-input"
+- inputText: ${DISPLAY_NAME}
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASSWORD}
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "sign-up-submit-button"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "tab-map"
+    timeout: 30000
+# Phase 4: saved-location trigger moved to the Profile screen in
+# commit 9668925; the Map FAB was removed in 9e9d580. Route through
+# `tab-profile` → `profile-add-saved-location-button`.
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "Saved locations"
+    timeout: 15000
+- swipe:
+    start: 50%, 84%
+    end: 50%, 38%
+    duration: 500
+- assertVisible: "Profile add saved location"
+- tapOn: "Profile add saved location"
+- tapOn:
+    id: "location-picker-label-input"
+- inputText: "Full Integration Reef"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "location-picker-save-button"
+# After LocationPicker.goBack() the user is on Profile. The next step
+# is `tab-dive` on the Dive tab, but we go through Map first so the
+# Map screen has loaded before the dive event consumes the saved
+# location (matches the pre-Phase-4 ordering).
+- tapOn:
+    id: "tab-map"
+- extendedWaitUntil:
+    visible:
+      id: "tab-map"
+    timeout: 15000
+- tapOn:
+    id: "tab-dive"
+- extendedWaitUntil:
+    visible: "Dive event"
+    timeout: 15000
+- tapOn:
+    id: "dive-event-create-button"
+- extendedWaitUntil:
+    visible: "Create dive event"
+    timeout: 10000
+- tapOn:
+    id: "dive-event-title-input"
+- inputText: "Blue Channel Verification Dive"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "dive-event-description-input"
+- inputText: "Full integration validation dive."
+- tapOn:
+    id: "dive-event-title-input"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: "dive-event-selected-location"
+    direction: DOWN
+    centerElement: true
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "dive-event-selected-location"
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: "dive-event-save-button"
+    direction: DOWN
+    centerElement: true
+    timeout: 10000
+- tapOn:
+    id: "dive-event-save-button"
+- extendedWaitUntil:
+    visible:
+      id: "dive-event-success"
+    timeout: 30000
+- takeScreenshot: "phase6-integration-dive"
+- tapOn:
+    id: "tab-map"
+- extendedWaitUntil:
+    visible:
+      id: "tab-map"
+    timeout: 30000
+- tapOn:
+    id: "map-search-this-area-button"
+- extendedWaitUntil:
+    visible:
+      id: "map-status"
+    timeout: 30000
+- tapOn:
+    id: "map-search-results-pill-button"
+- assertVisible: "People"
+- tapOn:
+    point: 50%, 49%
+- extendedWaitUntil:
+    visible:
+      id: "map-person-detail-card"
+    timeout: 10000
+- tapOn:
+    id: "map-message-diver-button"
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 30000
+- tapOn:
+    id: "chat-message-input"
+- inputText: "Hello from full integration"
+- tapOn:
+    id: "chat-send-button"
+- extendedWaitUntil:
+    visible: "Hello from full integration"
+    timeout: 30000
+- takeScreenshot: "phase6-integration-chat"
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "profile-display-name-input"
+    timeout: 30000
+- tapOn:
+    id: "profile-display-name-input"
+- eraseText: 80
+- inputText: "Noah Vale"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "profile-save-button"
+- extendedWaitUntil:
+    visible:
+      id: "profile-success"
+    timeout: 30000
+- takeScreenshot: "phase6-integration-profile"
+- tapOn:
+    id: "tab-settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 30000
+- tapOn:
+    id: "settings-theme-dark"
+- assertVisible: "Theme dark"
+- tapOn:
+    id: "settings-theme-system"
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "settings-sign-out-button"
+- tapOn: "Confirm sign out"
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASSWORD}
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "sign-in-submit-button"
+- extendedWaitUntil:
+    visible: "Not Now"
+    timeout: 30000
+    optional: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "tab-map"
+    timeout: 30000
+- takeScreenshot: "phase6-integration-restore"

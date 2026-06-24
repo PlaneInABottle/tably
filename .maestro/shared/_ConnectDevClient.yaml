@@ -1,0 +1,36 @@
+appId: ${MAESTRO_APP_ID}
+---
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Diving Buddy"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "DEVELOPMENT SERVERS"
+    commands:
+      - tapOn: "Enter URL manually"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "exp://"
+    commands:
+      - tapOn: "exp://"
+      - eraseText: 30
+      - inputText: "http://localhost:8081"
+      - tapOn: "Connect"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - tapOn: "Reload"
+      - waitForAnimationToEnd

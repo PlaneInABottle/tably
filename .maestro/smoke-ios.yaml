@@ -1,0 +1,11 @@
+appId: ${MAESTRO_APP_ID}
+tags:
+  - smoke
+  - ios
+onFlowStart:
+  - runFlow: shared/_OnFlowStart.yaml
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- takeScreenshot: "phase0-ios-smoke"

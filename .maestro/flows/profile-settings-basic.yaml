@@ -1,0 +1,85 @@
+appId: ${MAESTRO_APP_ID}
+onFlowStart:
+  - runFlow: ../shared/_OnFlowStart.yaml
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "sign-in-submit-button"
+- runFlow:
+    when:
+      visible: "Save Password?"
+    commands:
+      - tapOn: "Not Now"
+- extendedWaitUntil:
+    visible: "Map"
+    timeout: 30000
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "Profile"
+    timeout: 30000
+- assertVisible: "Profile avatar upload"
+- tapOn:
+    id: "profile-save-button"
+- extendedWaitUntil:
+    visible:
+      id: "profile-success"
+    timeout: 30000
+- hideKeyboard
+- takeScreenshot: "phase5-profile-settings-profile"
+- tapOn:
+    id: "tab-settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 30000
+- assertVisible: "Appearance"
+- tapOn:
+    id: "settings-theme-dark"
+- assertVisible: "Theme dark"
+- tapOn:
+    id: "settings-theme-system"
+- assertVisible: "Security"
+- assertVisible: "Support"
+- takeScreenshot: "phase5-profile-settings-settings"
+- scrollUntilVisible:
+    element: "Safety"
+    direction: DOWN
+    timeout: 10000
+- assertVisible: "No blocked divers."
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+    direction: DOWN
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: "settings-delete-account-button"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "settings-delete-account-button"
+- assertVisible: "Delete account?"
+- tapOn: "Cancel"
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+    direction: UP
+    timeout: 10000
+- tapOn:
+    id: "settings-sign-out-button"
+- assertVisible: "Sign out?"
+- tapOn: "Cancel"
+- assertVisible:
+    id: "settings-sign-out-button"

@@ -1,0 +1,19 @@
+appId: ${MAESTRO_APP_ID}
+onFlowStart:
+  - runFlow: ../shared/_OnFlowStart.yaml
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "email-input"
+- inputText: "invalid-email"
+- tapOn:
+    id: "password-input"
+- inputText: "wrong-password"
+- hideKeyboard
+- tapOn:
+    id: "sign-in-submit-button"
+- assertVisible:
+    id: "sign-in-error"
+- takeScreenshot: "phase1-invalid-signin"

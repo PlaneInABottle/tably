@@ -1,0 +1,84 @@
+{
+  "name": "Tably",
+  "slug": "Tably",
+  "scheme": "tably",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "userInterfaceStyle": "automatic",
+  "icon": "./assets/images/app-icon-all.png",
+  "updates": {
+    "fallbackToCacheTimeout": 0
+  },
+  "newArchEnabled": true,
+  "jsEngine": "hermes",
+  "assetBundlePatterns": [
+    "**/*"
+  ],
+  "android": {
+    "icon": "./assets/images/app-icon-android-legacy.png",
+    "package": "com.tably.app",
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/images/app-icon-android-adaptive-foreground.png",
+      "backgroundImage": "./assets/images/app-icon-android-adaptive-background.png"
+    },
+    "allowBackup": false,
+    "edgeToEdgeEnabled": true
+  },
+  "ios": {
+    "icon": "./assets/images/app-icon-ios.png",
+    "supportsTablet": true,
+    "bundleIdentifier": "com.tably.app"
+  },
+  "web": {
+    "favicon": "./assets/images/app-icon-web-favicon.png",
+    "bundler": "metro"
+  },
+  "plugins": [
+    "expo-localization",
+    "expo-font",
+    [
+      "expo-splash-screen",
+      {
+        "image": "./assets/images/app-icon-android-adaptive-foreground.png",
+        "imageWidth": 300,
+        "resizeMode": "contain",
+        "backgroundColor": "#191015"
+      }
+    ],
+    [
+      "react-native-edge-to-edge",
+      {
+        "android": {
+          "parentTheme": "Light",
+          "enforceNavigationBarContrast": false
+        }
+      }
+    ],
+    [
+      "expo-location",
+      {
+        "locationWhenInUsePermission": "Tably uses your location to show nearby divers when you choose to save it.",
+        "locationAlwaysAndWhenInUsePermission": "Tably uses your location to show nearby divers when you choose to save it."
+      }
+    ],
+    [
+      "expo-image-picker",
+      {
+        "photosPermission": "Tably uses your photo library only when you choose a profile avatar."
+      }
+    ],
+    "expo-build-properties"
+  ],
+  "experiments": {
+    "tsconfigPaths": true
+  },
+  "extra": {
+    "ignite": {
+      "version": "11.5.0"
+    },
+    "eas": {
+      "projectId": "ed015ec6-b01b-4b96-9f61-f9b63371fb58"
+    }
+  },
+  "owner": "planeinabottle"
+}

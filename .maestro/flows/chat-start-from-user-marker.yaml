@@ -1,0 +1,98 @@
+appId: ${MAESTRO_APP_ID}
+onFlowStart:
+  - runFlow: ../shared/_OnFlowStart.yaml
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "sign-in-submit-button"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: "Map"
+    timeout: 30000
+- setLocation:
+    latitude: 41.015137
+    longitude: 28.97953
+- setPermissions:
+    permissions:
+      location: inuse
+- tapOn:
+    id: "map-use-current-location-button"
+- tapOn:
+    text: "Allow While Using App"
+    optional: true
+- tapOn:
+    text: "Allow Once"
+    optional: true
+- extendedWaitUntil:
+    visible: "Location selected"
+    timeout: 30000
+- tapOn:
+    id: "map-search-this-area-button"
+- extendedWaitUntil:
+    visible:
+      id: "map-status"
+    timeout: 30000
+- tapOn:
+    id: "map-search-results-pill-button"
+- extendedWaitUntil:
+    visible: "People"
+    timeout: 10000
+- tapOn:
+    id: "map-search-result-person-00000000-0000-4000-8000-000000000202"
+- extendedWaitUntil:
+    visible:
+      id: "map-person-detail-card"
+    timeout: 10000
+- assertVisible: "Message diver"
+- assertVisible: "Report diver"
+- assertVisible: "Block diver"
+- tapOn:
+    id: "map-message-diver-button"
+- extendedWaitUntil:
+    visible: "Private 1-on-1 conversation"
+    timeout: 30000
+- tapOn:
+    id: "chat-message-input"
+- inputText: "Hello from user marker chat"
+- tapOn:
+    id: "chat-send-button"
+- extendedWaitUntil:
+    visible: "Hello from user marker chat"
+    timeout: 30000
+- tapOn:
+    id: "chat-detail-header-menu"
+- assertVisible: "Report conversation"
+- assertVisible: "Report latest message"
+- assertVisible: "Block diver"
+- tapOn: "Cancel"
+- tapOn:
+    id: "tab-chat"
+- extendedWaitUntil:
+    visible: "Riley Chen"
+    timeout: 30000
+- assertVisible: "Hello from user marker chat"
+- takeScreenshot: "phase4-chat-user-marker"
+- tapOn:
+    id: "tab-settings"
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "settings-sign-out-button"
+- tapOn: "Confirm sign out"

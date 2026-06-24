@@ -1,0 +1,159 @@
+appId: ${MAESTRO_APP_ID}
+onFlowStart:
+  # Note: _OnFlowStart.yaml runs `clearState: true` which is incompatible
+  # with the Expo dev launcher. When running against a development build
+  # launched via Metro, this flow assumes the user is not already signed
+  # in OR that the prior `clearState: true` failed silently (in which case
+  # the sign-in steps below will surface the sign-in screen). For IPA
+  # builds the `onFlowStart` line is required and is therefore preserved.
+  - runFlow: ../shared/_OnFlowStart.yaml
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+  DISPLAY_NAME: ${DISPLAY_NAME}
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "sign-in-create-account-button"
+- tapOn:
+    id: "display-name-input"
+- inputText: ${DISPLAY_NAME}
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASSWORD}
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "sign-up-submit-button"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: "Map"
+    timeout: 30000
+# Phase 4: saved-location trigger moved to the Profile screen in
+# commit 9668925; the Map FAB was removed in 9e9d580. Route through
+# `tab-profile` → `profile-add-saved-location-button`. The second add
+# below also runs from Profile, so the same idempotent tab-profile
+# switch is used; we then `tab-map` once both adds are done.
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "Saved locations"
+    timeout: 15000
+- swipe:
+    start: 50%, 84%
+    end: 50%, 38%
+    duration: 500
+- assertVisible: "Profile add saved location"
+- tapOn: "Profile add saved location"
+- tapOn:
+    id: "location-picker-label-input"
+- inputText: "Primary Reef"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "location-picker-save-button"
+# After LocationPicker.goBack() the user is on Profile; the next step
+# is a second add, also from Profile, so we stay on Profile.
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "Saved locations"
+    timeout: 15000
+- swipe:
+    start: 50%, 84%
+    end: 50%, 38%
+    duration: 500
+- assertVisible: "Profile add saved location"
+- tapOn: "Profile add saved location"
+- tapOn:
+    id: "location-picker-label-input"
+- inputText: "Secondary Reef"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "location-picker-save-button"
+# After LocationPicker.goBack() the user is on Profile. The next step
+# (`map-search-this-area-button`) is on the Map tab, so switch back.
+- tapOn:
+    id: "tab-map"
+- extendedWaitUntil:
+    visible: "Map"
+    timeout: 15000
+- tapOn:
+    id: "map-search-this-area-button"
+- extendedWaitUntil:
+    visible:
+      id: "map-status"
+    timeout: 30000
+- assertNotVisible: "Primary Reef"
+- tapOn:
+    id: "tab-dive"
+- extendedWaitUntil:
+    visible: "Dive event"
+    timeout: 30000
+- tapOn:
+    id: "dive-event-create-button"
+- extendedWaitUntil:
+    visible: "Create dive event"
+    timeout: 10000
+- scrollUntilVisible:
+    element: "Select saved location Secondary Reef"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Select saved location Secondary Reef"
+- scrollUntilVisible:
+    element:
+      id: "dive-event-title-input"
+    direction: UP
+    centerElement: true
+    timeout: 10000
+- tapOn:
+    id: "dive-event-title-input"
+- inputText: "Selected Reef Dive"
+- tapOn:
+    id: "dive-event-description-input"
+- inputText: "Event from selected saved location."
+- tapOn:
+    id: "dive-event-title-input"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: "dive-event-save-button"
+    direction: DOWN
+    centerElement: true
+    timeout: 10000
+- tapOn:
+    id: "dive-event-save-button"
+- extendedWaitUntil:
+    visible:
+      id: "dive-event-success"
+    timeout: 30000
+- assertVisible: "Selected Reef Dive"
+- assertVisible: "Saved location: Secondary Reef"
+- takeScreenshot: "map-redesign-saved-location-event"
+- tapOn:
+    id: "tab-settings"
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "settings-sign-out-button"
+- tapOn: "Confirm sign out"

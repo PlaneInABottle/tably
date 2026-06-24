@@ -1,0 +1,53 @@
+appId: ${MAESTRO_APP_ID}
+onFlowStart:
+  - runFlow: ../shared/_OnFlowStart.yaml
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+  DISPLAY_NAME: ${DISPLAY_NAME}
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "sign-in-create-account-button"
+- tapOn:
+    id: "display-name-input"
+- inputText: ${DISPLAY_NAME}
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "sign-up-terms-checkbox"
+- tapOn:
+    id: "sign-up-submit-button"
+- extendedWaitUntil:
+    visible: "Not Now"
+    timeout: 30000
+    optional: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "tab-map"
+    timeout: 30000
+- tapOn:
+    id: "tab-settings"
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "settings-sign-out-button"
+- tapOn: "Confirm sign out"
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- takeScreenshot: "phase1-signup-signout"

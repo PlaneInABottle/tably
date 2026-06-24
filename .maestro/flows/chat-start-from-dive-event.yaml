@@ -1,0 +1,100 @@
+appId: ${MAESTRO_APP_ID}
+onFlowStart:
+  - runFlow: ../shared/_OnFlowStart.yaml
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+---
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 30000
+- tapOn:
+    id: "email-input"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "password-input"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "sign-in-submit-button"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: "Map"
+    timeout: 30000
+- setLocation:
+    latitude: 41.015137
+    longitude: 28.97953
+- setPermissions:
+    permissions:
+      location: inuse
+- tapOn:
+    id: "map-use-current-location-button"
+- tapOn:
+    text: "Allow While Using App"
+    optional: true
+- tapOn:
+    text: "Allow Once"
+    optional: true
+- extendedWaitUntil:
+    visible: "Location selected"
+    timeout: 30000
+- tapOn:
+    id: "map-search-this-area-button"
+- extendedWaitUntil:
+    visible:
+      id: "map-status"
+    timeout: 30000
+- tapOn:
+    id: "map-search-results-pill-button"
+- extendedWaitUntil:
+    visible: "Events"
+    timeout: 10000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Karaköy Night Current Survey"
+    timeout: 10000
+- scrollUntilVisible:
+    element: "Karaköy Night Current Survey"
+    direction: DOWN
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: "Karaköy Night Current Survey"
+- extendedWaitUntil:
+    visible:
+      id: "map-event-detail-card"
+    timeout: 10000
+- assertVisible: "Message organizer"
+- assertVisible: "Report event"
+- assertVisible: "Block organizer"
+- tapOn:
+    id: "map-message-event-organizer-button"
+- extendedWaitUntil:
+    visible: "Private 1-on-1 conversation"
+    timeout: 30000
+- tapOn:
+    id: "chat-message-input"
+- inputText: "Hello from event organizer chat"
+- tapOn:
+    id: "chat-send-button"
+- extendedWaitUntil:
+    visible: "Hello from event organizer chat"
+    timeout: 30000
+- tapOn:
+    id: "tab-chat"
+- extendedWaitUntil:
+    visible: "Lena Cruz"
+    timeout: 30000
+- assertVisible: "Hello from event organizer chat"
+- takeScreenshot: "phase4-chat-dive-event"
+- tapOn:
+    id: "tab-settings"
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "settings-sign-out-button"
+- tapOn: "Confirm sign out"

@@ -1,0 +1,52 @@
+appId: ${MAESTRO_APP_ID}
+env:
+  # Flow is for an already-signed-in state (the smoke-ios.yaml entrypoint
+  # signs the user in beforehand). The credentials below match the
+  # `phase2.search@example.com` account that the seed script provisions.
+  EMAIL: phase2.search@example.com
+  PASSWORD: Password123!
+---
+# Phase 4 regression flow for the Profile "Saved locations" section
+# (commit 9668925). Verifies the add → list cycle end-to-end.
+#
+# Intentionally does NOT use `onFlowStart: clearState: true` because
+# that is incompatible with the Expo dev launcher — this flow assumes
+# the user is already signed in. For IPA builds, run the smoke
+# sign-in flow first.
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "Saved locations"
+    timeout: 30000
+# The add button is always rendered, even when the empty-state card is
+# shown. Asserting on the button testID avoids brittleness from prior
+# saved locations polluting the list between runs.
+- swipe:
+    start: 50%, 84%
+    end: 50%, 38%
+    duration: 500
+- assertVisible: "Profile add saved location"
+- tapOn: "Profile add saved location"
+- extendedWaitUntil:
+    visible:
+      id: "location-picker-screen"
+    timeout: 15000
+# Default marker sits at `defaultCoordinate` (LocationPickerScreen.tsx
+# line 18); we don't drop a custom pin — the default position is fine
+# for a smoke test of the section.
+- tapOn:
+    id: "location-picker-label-input"
+- inputText: "Profile Regression Spot"
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- tapOn:
+    id: "location-picker-save-button"
+# LocationPicker.goBack() returns to Profile; useFocusEffect re-fetches
+# the list (ProfileScreen.tsx:48-60) so the new row appears.
+- extendedWaitUntil:
+    visible: "Saved locations"
+    timeout: 15000
+- assertVisible: "Profile Regression Spot"
+- takeScreenshot: "profile-saved-locations-clean"

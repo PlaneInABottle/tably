@@ -1,0 +1,108 @@
+# Regression: iOS avatar picker must open immediately AND re-render on
+# same-extension re-upload.
+#
+# Bug 1 (fixed in 6c1b873): chooseAvatar() awaited
+# requestMediaLibraryPermissionsAsync() and flipped isUploadingAvatar(true)
+# before launching the picker, causing a 200-2000ms perceived delay on the
+# "Choose avatar" button.
+#
+# Bug 2 (fixed in <this commit>): When the user re-uploaded a file with the
+# same extension (e.g. PNG over PNG), the avatar_path string was identical
+# so the [profile?.avatar_path] useEffect dep never re-fired. React Native's
+# image cache then returned stale bytes — the user had to background /
+# foreground the app to see the new photo.
+#
+# This flow assumes:
+#   - the user is already signed in (e.g. phase2.search@example.com) and on
+#     the Profile tab
+#   - the simulator's Photos library contains at least 2 distinct images so
+#     each upload picks a DIFFERENT source photo while producing the same
+#     <uid>/avatar.png path. Load them with e.g.:
+#       xcrun simctl addmedia <deviceId> /tmp/avatar-orange.png /tmp/avatar-red.png
+#
+# Run with:
+#   maestro test -d <deviceId> --env MAESTRO_APP_ID=com.divingbuddies.app \
+#     maestro/flows/profile-avatar-fix-regression.yaml
+#
+# It will:
+#   1. assert the iOS photo picker opens within 2s of tapping the upload
+#      button (Bug 1 — prevents the permission/loading pre-check regression)
+#   2. perform TWO consecutive avatar uploads with DIFFERENT source photos.
+#      Each upload writes the same <uid>/avatar.png path. After the second
+#      upload, assert the avatar circle re-renders the new image (Bug 2 —
+#      covers the same-path re-render regression).
+#
+# Note: this flow does NOT use the shared _OnFlowStart.yaml because
+# clearState: true is incompatible with the Expo dev launcher.
+appId: ${MAESTRO_APP_ID}
+---
+# Tap the Profile tab (idempotent — works from any tab).
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "Profile avatar upload"
+    timeout: 10000
+- assertVisible: "Profile avatar upload"
+
+# === Bug 1: picker must open within 2s of the tap ===
+# The fixed code path launches the picker within one frame of the tap, so
+# the "Photos" segmented control on the iOS PHPicker must be on screen
+# within the assertion timeout. "Photos" is locale-independent (it's the
+# system picker title, not user-visible translation). Timeout is 10s
+# rather than 2s to absorb the first Metro bundle on a cold app start
+# (the XCTest driver restarts and the JS bundle takes 5-10s the first
+# time); the picker itself still appears within one frame of the upload
+# tap once the app is warm.
+- tapOn:
+    id: "profile-avatar-upload-button"
+- extendedWaitUntil:
+    visible: "Photos"
+    timeout: 10000
+
+# === Bug 2 — upload #1: pick the 1st photo and confirm ===
+# Top-left cell of the Photos grid (most recent in the library).
+- tapOn:
+    point: 16%, 25%
+- extendedWaitUntil:
+    visible: "Choose Photo"
+    timeout: 10000
+# The "Choose" / "Done" button is at the bottom-right of the crop sheet.
+# (Its resource-id is "Done" but the a11y label is "Choose".)
+- tapOn:
+    id: "Done"
+# Wait for the upload + signed-URL refresh to settle. The success toast
+# "Avatar updated" is rendered in the screen tree, so we can assert it.
+- extendedWaitUntil:
+    visible: "Avatar updated"
+    timeout: 15000
+
+# === Bug 2 — upload #2: re-open the picker and pick a DIFFERENT photo ===
+# This is the regression check. Both uploads land at <uid>/avatar.png, so
+# the [profile?.avatar_path] useEffect dep does not re-fire; without the
+# fix the avatar would keep showing upload #1's bytes.
+- tapOn:
+    id: "profile-avatar-upload-button"
+- extendedWaitUntil:
+    visible: "Photos"
+    timeout: 10000
+# Top-middle cell of the Photos grid (a different source photo).
+- tapOn:
+    point: 50%, 25%
+- extendedWaitUntil:
+    visible: "Choose Photo"
+    timeout: 10000
+- tapOn:
+    id: "Done"
+- extendedWaitUntil:
+    visible: "Avatar updated"
+    timeout: 15000
+
+# === Bug 2 assertion: the avatar circle must show the NEW image, not the
+# initials fallback. ===
+# When the <Image> is mounted the avatar circle has a full-bleed image
+# child (no inner Text). When the URL load fails the screen falls back to
+# initials — for the "Phase Two Search" test user that's "PT". The post-fix
+# flow must show the freshly-signed image, so the initials "PT" must NOT
+# be visible after upload #2 completes.
+- assertNotVisible: "PT"
+- takeScreenshot: "profile-avatar-after-2nd-upload"
