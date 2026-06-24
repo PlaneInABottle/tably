@@ -3,15 +3,13 @@ import { Ionicons } from "@expo/vector-icons"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-import { ChatNavigator } from "@/navigators/ChatNavigator"
-import { DiveEventScreen } from "@/screens/main/DiveEventScreen"
-import { MapScreen } from "@/screens/main/MapScreen"
+import { CreateTableScreen } from "@/screens/main/CreateTableScreen"
 import { ProfileScreen } from "@/screens/main/ProfileScreen"
-import { SettingsScreen } from "@/screens/main/SettingsScreen"
+import { TableChatsScreen } from "@/screens/main/TableChatsScreen"
+import { TodayScreen } from "@/screens/main/TodayScreen"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 
-import { handleChatTabPress } from "./chatTabPress"
 import type { MainTabParamList } from "./navigationTypes"
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"]
@@ -19,11 +17,10 @@ type IoniconName = React.ComponentProps<typeof Ionicons>["name"]
 type TabIconRoute = keyof MainTabParamList
 
 const TAB_ICON_NAMES: Record<TabIconRoute, { focused: IoniconName; unfocused: IoniconName }> = {
-  Map: { focused: "map", unfocused: "map-outline" },
-  DiveEvent: { focused: "water", unfocused: "water-outline" },
-  Chat: { focused: "chatbubbles", unfocused: "chatbubbles-outline" },
+  Today: { focused: "flash", unfocused: "flash-outline" },
+  CreateTable: { focused: "add-circle", unfocused: "add-circle-outline" },
+  Chats: { focused: "chatbubbles", unfocused: "chatbubbles-outline" },
   Profile: { focused: "person-circle", unfocused: "person-circle-outline" },
-  Settings: { focused: "settings", unfocused: "settings-outline" },
 }
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
@@ -48,14 +45,16 @@ export function MainTabNavigator() {
       }}
     >
       <Tab.Screen
-        name="Map"
-        component={MapScreen}
+        name="Today"
+        component={TodayScreen}
         options={{
-          tabBarButtonTestID: "tab-map",
+          tabBarButtonTestID: "tab-today",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={
-                (focused ? TAB_ICON_NAMES.Map.focused : TAB_ICON_NAMES.Map.unfocused) as IoniconName
+                (focused
+                  ? TAB_ICON_NAMES.Today.focused
+                  : TAB_ICON_NAMES.Today.unfocused) as IoniconName
               }
               size={size}
               color={color}
@@ -64,17 +63,17 @@ export function MainTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="DiveEvent"
-        component={DiveEventScreen}
+        name="CreateTable"
+        component={CreateTableScreen}
         options={{
-          title: "Dive",
-          tabBarButtonTestID: "tab-dive",
+          title: "Create",
+          tabBarButtonTestID: "tab-create",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={
                 (focused
-                  ? TAB_ICON_NAMES.DiveEvent.focused
-                  : TAB_ICON_NAMES.DiveEvent.unfocused) as IoniconName
+                  ? TAB_ICON_NAMES.CreateTable.focused
+                  : TAB_ICON_NAMES.CreateTable.unfocused) as IoniconName
               }
               size={size}
               color={color}
@@ -83,19 +82,16 @@ export function MainTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Chat"
-        component={ChatNavigator}
-        listeners={({ navigation }) => ({
-          tabPress: (event) => handleChatTabPress(event, navigation),
-        })}
+        name="Chats"
+        component={TableChatsScreen}
         options={{
-          tabBarButtonTestID: "tab-chat",
+          tabBarButtonTestID: "tab-chats",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
               name={
                 (focused
-                  ? TAB_ICON_NAMES.Chat.focused
-                  : TAB_ICON_NAMES.Chat.unfocused) as IoniconName
+                  ? TAB_ICON_NAMES.Chats.focused
+                  : TAB_ICON_NAMES.Chats.unfocused) as IoniconName
               }
               size={size}
               color={color}
@@ -114,24 +110,6 @@ export function MainTabNavigator() {
                 (focused
                   ? TAB_ICON_NAMES.Profile.focused
                   : TAB_ICON_NAMES.Profile.unfocused) as IoniconName
-              }
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          tabBarButtonTestID: "tab-settings",
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons
-              name={
-                (focused
-                  ? TAB_ICON_NAMES.Settings.focused
-                  : TAB_ICON_NAMES.Settings.unfocused) as IoniconName
               }
               size={size}
               color={color}

@@ -1,5 +1,6 @@
 import { FC, useEffect, useState } from "react"
 import { Alert, Linking, Pressable, TextStyle, View, ViewStyle } from "react-native"
+import { useNavigation } from "@react-navigation/native"
 
 import { Button } from "@/components/Button"
 import { InlineNotice } from "@/components/InlineNotice"
@@ -7,7 +8,7 @@ import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { useAuth } from "@/context/AuthContext"
 import { translate } from "@/i18n/translate"
-import type { MainTabScreenProps } from "@/navigators/navigationTypes"
+import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { deleteAccount } from "@/services/account/accountService"
 import {
   listBlockedUsers,
@@ -18,7 +19,7 @@ import { showSuccessToast } from "@/services/notifications/toastService"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 
-interface SettingsScreenProps extends MainTabScreenProps<"Settings"> {}
+interface SettingsScreenProps {}
 
 type ThemeMode = "system" | "light" | "dark"
 type ThemeLabelTx =
@@ -27,13 +28,14 @@ type ThemeLabelTx =
   | "settingsScreen:themeDark"
 
 const SUPPORT_LINKS = {
-  privacy: "https://divingbuddies.app/privacy",
-  terms: "https://divingbuddies.app/terms",
-  accountDeletion: "https://divingbuddies.app/account-deletion",
-  contact: "mailto:support@divingbuddies.app",
+  privacy: "https://tably.app/privacy",
+  terms: "https://tably.app/terms",
+  accountDeletion: "https://tably.app/account-deletion",
+  contact: "mailto:support@tably.app",
 } as const
 
-export const SettingsScreen: FC<SettingsScreenProps> = ({ navigation }) => {
+export const SettingsScreen: FC<SettingsScreenProps> = () => {
+  const navigation = useNavigation<AppStackScreenProps<"Main">["navigation"]>()
   const { themed, themeContext, setThemeContextOverride } = useAppTheme()
   const { signOut } = useAuth()
   const [selectedThemeMode, setSelectedThemeMode] = useState<ThemeMode>(themeContext)

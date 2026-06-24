@@ -13,21 +13,11 @@ export type AuthStackParamList = {
   ForgotPassword: undefined
 }
 
-export type ChatStackParamList = {
-  ConversationList: undefined
-  ConversationDetail: {
-    conversationId: string
-    opponentUserId?: string
-    opponentDisplayName?: string
-  }
-}
-
 export type MainTabParamList = {
-  Map: undefined
-  DiveEvent: undefined
-  Chat: NavigatorScreenParams<ChatStackParamList> | undefined
+  Today: undefined
+  CreateTable: undefined
+  Chats: undefined
   Profile: undefined
-  Settings: undefined
 }
 
 export type DemoTabParamList = MainTabParamList & {
@@ -43,6 +33,9 @@ export type AppStackParamList = {
   UpdatePassword: undefined
   Main: NavigatorScreenParams<MainTabParamList>
   ChangePassword: undefined
+  TableDetail: {
+    tableId: string
+  }
   LocationPicker:
     | {
         initialLatitude?: number
@@ -70,11 +63,6 @@ export type AuthStackScreenProps<T extends keyof AuthStackParamList> = Composite
 export type MainTabScreenProps<T extends keyof MainTabParamList> = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, T>,
   AppStackScreenProps<keyof AppStackParamList>
->
-
-export type ChatStackScreenProps<T extends keyof ChatStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<ChatStackParamList, T>,
-  MainTabScreenProps<"Chat">
 >
 
 export type DemoTabScreenProps<T extends keyof DemoTabParamList> = CompositeScreenProps<

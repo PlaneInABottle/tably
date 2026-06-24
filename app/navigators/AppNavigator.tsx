@@ -7,6 +7,7 @@ import { UpdatePasswordScreen } from "@/screens/auth/UpdatePasswordScreen"
 import { ErrorBoundary } from "@/screens/ErrorScreen/ErrorBoundary"
 import { ChangePasswordScreen } from "@/screens/main/ChangePasswordScreen"
 import { LocationPickerScreen } from "@/screens/main/LocationPickerScreen"
+import { TableDetailScreen } from "@/screens/main/TableDetailScreen"
 import { useAppTheme } from "@/theme/context"
 
 import { AuthNavigator } from "./AuthNavigator"
@@ -39,6 +40,7 @@ const AppStack = () => {
         <>
           <Stack.Screen name="Main" component={MainTabNavigator} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="TableDetail" component={TableDetailScreen} />
           <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
         </>
       ) : (
