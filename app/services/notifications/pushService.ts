@@ -1,4 +1,4 @@
-import { Platform } from "react-native"
+import { NativeModules, Platform } from "react-native"
 import Constants from "expo-constants"
 
 import { navigate } from "@/navigators/navigationUtilities"
@@ -40,6 +40,11 @@ async function getNativeNotifications(): Promise<NativeNotifications | null> {
   if (nativeNotifications !== undefined) return nativeNotifications
 
   try {
+    if (!NativeModules.ExpoDevice || !NativeModules.ExpoPushTokenManager) {
+      nativeNotifications = null
+      return nativeNotifications
+    }
+
     const Device = require("expo-device") as typeof import("expo-device")
     const Notifications = require("expo-notifications") as typeof import("expo-notifications")
     Notifications.setNotificationHandler({

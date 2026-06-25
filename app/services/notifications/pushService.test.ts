@@ -1,4 +1,4 @@
-import { Platform } from "react-native"
+import { NativeModules, Platform } from "react-native"
 
 import { supabase } from "@/services/supabase/client"
 
@@ -38,6 +38,8 @@ jest.mock("expo-notifications", () => ({
 describe("pushService", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    NativeModules.ExpoDevice = {}
+    NativeModules.ExpoPushTokenManager = {}
   })
 
   it("registers an Expo push token through RPC", async () => {
