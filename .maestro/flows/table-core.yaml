@@ -65,7 +65,7 @@ env:
     visible: "You are confirmed."
     timeout: 30000
 - tapOn:
-    point: "35%,73%"
+    point: "35%,78%"
 - inputText: "I can arrive ten minutes early."
 - hideKeyboard
 - tapOn: "Send"
