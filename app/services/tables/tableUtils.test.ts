@@ -71,15 +71,19 @@ describe("tableUtils", () => {
     const now = new Date("2026-06-24T10:00:00.000Z")
 
     expect(getChatPromptChips("confirmed", "2026-06-24T10:45:00.000Z", true, now)).toEqual([
-      "I'm on my way",
-      "I arrived",
-      "Where are you sitting?",
+      { label: "I'm on my way", message: "I'm on my way and should arrive soon." },
+      { label: "I arrived", message: "I arrived. Where should I find everyone?" },
+      { label: "Where are you sitting?", message: "Where are you sitting exactly?" },
     ])
-    expect(getChatPromptChips("confirmed", "2026-06-24T15:00:00.000Z", true, now)).toContain(
-      "Confirm venue",
-    )
-    expect(getChatPromptChips("pending_confirm", "2026-06-24T15:00:00.000Z", false, now)).toContain(
-      "Share arrival time",
-    )
+    expect(getChatPromptChips("confirmed", "2026-06-24T15:00:00.000Z", true, now)).toContainEqual({
+      label: "Confirm venue",
+      message: "Can we confirm the exact venue?",
+    })
+    expect(
+      getChatPromptChips("pending_confirm", "2026-06-24T15:00:00.000Z", false, now),
+    ).toContainEqual({
+      label: "Share arrival time",
+      message: "I can arrive around the planned time.",
+    })
   })
 })

@@ -47,11 +47,20 @@ env:
     element: "Create table"
     direction: DOWN
     timeout: 10000
-- tapOn: "Create table"
+- tapOn:
+    point: "50%,85%"
 - extendedWaitUntil:
     visible: "Table"
     timeout: 30000
 - assertVisible: "Coffee table"
+- runFlow:
+    when:
+      visible: "Join this table"
+    commands:
+      - tapOn: "Join"
+      - extendedWaitUntil:
+          visible: "Needs intro"
+          timeout: 30000
 - assertVisible: "Needs intro"
 - tapOn: "A short answer is enough."
 - inputText: "Easy conversation and a calm coffee plan."
@@ -62,16 +71,20 @@ env:
     timeout: 30000
 - tapOn: "Confirm attendance"
 - extendedWaitUntil:
-    visible: "You are confirmed."
+    visible: "You are confirmed"
     timeout: 30000
-- tapOn:
-    point: "35%,78%"
-- inputText: "I can arrive ten minutes early."
-- hideKeyboard
+- tapOn: "Use prompt Confirm venue"
+- extendedWaitUntil:
+    visible: "Can we confirm the exact venue?"
+    timeout: 10000
 - tapOn: "Send"
 - extendedWaitUntil:
-    visible: "I can arrive ten minutes early."
+    visible: "Can we confirm the exact venue?"
     timeout: 30000
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
 - tapOn: "Back"
 - waitForAnimationToEnd
 - tapOn:

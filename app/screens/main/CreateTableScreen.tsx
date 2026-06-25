@@ -221,6 +221,8 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
       {!!error ? <InlineNotice variant="error" text={error} /> : null}
       <Button
         text={isSaving ? "Creating..." : "Create table"}
+        accessibilityLabel="Submit table"
+        testID="create-table-submit-button"
         disabled={isSaving}
         preset="reversed"
         onPress={() => void save()}

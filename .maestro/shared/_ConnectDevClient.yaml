@@ -3,15 +3,11 @@ appId: ${MAESTRO_APP_ID}
 - waitForAnimationToEnd
 - runFlow:
     when:
-      visible: "Diving Buddy"
+      visible: "DEVELOPMENT SERVERS"
     commands:
-      - tapOn: "Continue"
-      - waitForAnimationToEnd
-- runFlow:
-    when:
-      visible: "Tably"
-    commands:
-      - tapOn: "Continue"
+      - tapOn:
+          text: "Tably, http.*8081"
+          optional: true
       - waitForAnimationToEnd
 - runFlow:
     when:
@@ -39,4 +35,10 @@ appId: ${MAESTRO_APP_ID}
       visible: "Reload"
     commands:
       - tapOn: "Reload"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
       - waitForAnimationToEnd

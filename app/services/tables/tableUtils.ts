@@ -1,5 +1,10 @@
 import type { MemberStatus, TableStatus } from "./types"
 
+export type ChatPromptChip = {
+  label: string
+  message: string
+}
+
 export function formatActivityLabel(activity: string): string {
   const labels: Record<string, string> = {
     coffee: "Coffee",
@@ -134,7 +139,7 @@ export function getChatPromptChips(
   startsAt: string,
   hasMessages: boolean,
   now = new Date(),
-): string[] {
+): ChatPromptChip[] {
   const start = new Date(startsAt)
   const startsSoon =
     !Number.isNaN(start.getTime()) &&
@@ -142,16 +147,38 @@ export function getChatPromptChips(
     start.getTime() - now.getTime() <= 60 * 60 * 1000
 
   if (startsSoon && status === "confirmed") {
-    return ["I'm on my way", "I arrived", "Where are you sitting?"]
+    return [
+      { label: "I'm on my way", message: "I'm on my way and should arrive soon." },
+      { label: "I arrived", message: "I arrived. Where should I find everyone?" },
+      { label: "Where are you sitting?", message: "Where are you sitting exactly?" },
+    ]
   }
 
   if (status === "confirmed") {
-    return ["Confirm venue", "Share what you're wearing", "Say if you're running late"]
+    return [
+      { label: "Confirm venue", message: "Can we confirm the exact venue?" },
+      {
+        label: "Share what you're wearing",
+        message: "I will share what I'm wearing before I arrive.",
+      },
+      {
+        label: "Say if you're running late",
+        message: "I might be a few minutes late, but I am still coming.",
+      },
+    ]
   }
 
   if (!hasMessages) {
-    return ["Share arrival time", "Suggest exact spot", "Ask who is coming"]
+    return [
+      { label: "Share arrival time", message: "I can arrive around the planned time." },
+      { label: "Suggest exact spot", message: "Should we pick the exact spot before we meet?" },
+      { label: "Ask who is coming", message: "Who is confirmed for this table?" },
+    ]
   }
 
-  return ["Share arrival time", "Confirm venue", "Ask who is coming"]
+  return [
+    { label: "Share arrival time", message: "I can arrive around the planned time." },
+    { label: "Confirm venue", message: "Can we confirm the exact venue?" },
+    { label: "Ask who is coming", message: "Who is confirmed for this table?" },
+  ]
 }

@@ -410,13 +410,13 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                 <View style={themed($promptChips)}>
                   {getChatPromptChips(status, table.startsAt, messages.length > 0).map((prompt) => (
                     <Pressable
-                      key={prompt}
+                      key={prompt.label}
                       accessibilityRole="button"
-                      accessibilityLabel={`Use prompt ${prompt}`}
-                      onPress={() => setDraft(prompt)}
+                      accessibilityLabel={`Use prompt ${prompt.label}`}
+                      onPress={() => setDraft(prompt.message)}
                       style={themed($promptChip)}
                     >
-                      <Text text={prompt} size="xs" preset="bold" />
+                      <Text text={prompt.label} size="xs" preset="bold" />
                     </Pressable>
                   ))}
                 </View>
