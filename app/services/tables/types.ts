@@ -48,6 +48,8 @@ export type SocialTableSummary = {
   }
   myMemberStatus: MemberStatus | null
   isWaitlisted: boolean
+  introDueAt: string | null
+  confirmDueAt: string | null
 }
 
 export type SocialTableDetail = Omit<
@@ -59,6 +61,8 @@ export type SocialTableDetail = Omit<
     id: string
     displayName: string
   }
+  joinedAt: string | null
+  confirmedAt: string | null
 }
 
 export type TableMember = {
@@ -92,6 +96,8 @@ export type ActiveTableChat = {
   memberStatus: MemberStatus
   latestMessageBody: string | null
   latestMessageCreatedAt: string | null
+  introDueAt: string | null
+  confirmDueAt: string | null
 }
 
 export type CreateSocialTableInput = {

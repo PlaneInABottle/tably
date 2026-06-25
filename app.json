@@ -67,6 +67,13 @@
         "photosPermission": "Tably uses your photo library only when you choose a profile avatar."
       }
     ],
+    [
+      "expo-notifications",
+      {
+        "color": "#191015",
+        "defaultChannel": "momentum"
+      }
+    ],
     "expo-build-properties"
   ],
   "experiments": {

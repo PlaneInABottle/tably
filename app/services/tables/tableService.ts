@@ -41,6 +41,8 @@ type SummaryRow = {
   creator_avatar_path: string | null
   my_member_status: MemberStatus | null
   is_waitlisted: boolean
+  intro_due_at: string | null
+  confirm_due_at: string | null
 }
 
 type DetailRow = Omit<
@@ -48,6 +50,8 @@ type DetailRow = Omit<
   "confirmed_count" | "active_count" | "waitlist_count" | "creator_avatar_path"
 > & {
   intro_prompt: string
+  joined_at: string | null
+  confirmed_at: string | null
 }
 
 type MemberRow = {
@@ -81,6 +85,8 @@ type ActiveChatRow = {
   member_status: MemberStatus
   latest_message_body: string | null
   latest_message_created_at: string | null
+  intro_due_at: string | null
+  confirm_due_at: string | null
 }
 
 function normalizeError(message?: string): string {
@@ -121,6 +127,8 @@ function normalizeSummary(row: SummaryRow): SocialTableSummary {
     },
     myMemberStatus: row.my_member_status,
     isWaitlisted: row.is_waitlisted,
+    introDueAt: row.intro_due_at,
+    confirmDueAt: row.confirm_due_at,
   }
 }
 
@@ -144,6 +152,10 @@ function normalizeDetail(row: DetailRow): SocialTableDetail {
     },
     myMemberStatus: row.my_member_status,
     isWaitlisted: row.is_waitlisted,
+    introDueAt: row.intro_due_at,
+    confirmDueAt: row.confirm_due_at,
+    joinedAt: row.joined_at,
+    confirmedAt: row.confirmed_at,
   }
 }
 
@@ -183,6 +195,8 @@ function normalizeActiveChat(row: ActiveChatRow): ActiveTableChat {
     memberStatus: row.member_status,
     latestMessageBody: row.latest_message_body,
     latestMessageCreatedAt: row.latest_message_created_at,
+    introDueAt: row.intro_due_at,
+    confirmDueAt: row.confirm_due_at,
   }
 }
 

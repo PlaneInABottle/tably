@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native"
 
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
+import { TableMomentumBanner } from "@/components/TableMomentumBanner"
 import { Text } from "@/components/Text"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { listMyActiveTables } from "@/services/tables/tableService"
@@ -71,6 +72,12 @@ export const TableChatsScreen: FC<TableChatsScreenProps> = ({ navigation }) => {
             size="xs"
             numberOfLines={1}
             style={themed($muted)}
+          />
+          <TableMomentumBanner
+            status={table.memberStatus}
+            introDueAt={table.introDueAt}
+            confirmDueAt={table.confirmDueAt}
+            compact
           />
         </View>
         <View style={themed($right)}>

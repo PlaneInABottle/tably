@@ -6,6 +6,7 @@ import { Button } from "@/components/Button"
 import { InlineNotice } from "@/components/InlineNotice"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
+import { Switch } from "@/components/Toggle/Switch"
 import { useAuth } from "@/context/AuthContext"
 import { translate } from "@/i18n/translate"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
@@ -15,6 +16,11 @@ import {
   unblockUser,
   type BlockedUser,
 } from "@/services/moderation/moderationService"
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  type NotificationPreferences,
+} from "@/services/notifications/pushService"
 import { showSuccessToast } from "@/services/notifications/toastService"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
@@ -40,16 +46,37 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
   const { signOut } = useAuth()
   const [selectedThemeMode, setSelectedThemeMode] = useState<ThemeMode>(themeContext)
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
+  const [notificationPreferences, setNotificationPreferences] =
+    useState<NotificationPreferences | null>(null)
   const [error, setError] = useState("")
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
   useEffect(() => {
     void loadBlockedUsers()
+    void loadNotificationPreferences()
   }, [])
 
   async function loadBlockedUsers() {
     const result = await listBlockedUsers()
     if (result.ok) setBlockedUsers(result.data)
+  }
+
+  async function loadNotificationPreferences() {
+    const result = await getNotificationPreferences()
+    if (result.ok) setNotificationPreferences(result.data)
+  }
+
+  async function toggleNotificationPreference(key: keyof NotificationPreferences, value: boolean) {
+    if (!notificationPreferences) return
+    const next = { ...notificationPreferences, [key]: value }
+    setNotificationPreferences(next)
+    const result = await updateNotificationPreferences({ [key]: value })
+    if (!result.ok) {
+      setError(result.error)
+      setNotificationPreferences(notificationPreferences)
+      return
+    }
+    setNotificationPreferences(result.data)
   }
 
   function setThemeMode(mode: ThemeMode) {
@@ -199,6 +226,50 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
           testID="settings-change-password-button"
           onPress={() => navigation.getParent()?.navigate("ChangePassword")}
         />
+      </View>
+      <View style={themed($section)}>
+        <Text text="Notifications" preset="subheading" style={themed($sectionTitle)} />
+        <Text
+          text="Control reminders that keep table plans moving."
+          size="sm"
+          style={themed($body)}
+        />
+        {notificationPreferences ? (
+          <>
+            <Switch
+              label="Seat held reminders"
+              value={notificationPreferences.seatHeldIntro}
+              onValueChange={(value) => toggleNotificationPreference("seatHeldIntro", value)}
+            />
+            <Switch
+              label="Confirm attendance reminders"
+              value={notificationPreferences.seatConfirmDue}
+              onValueChange={(value) => toggleNotificationPreference("seatConfirmDue", value)}
+            />
+            <Switch
+              label="Confirmed table updates"
+              value={notificationPreferences.tableConfirmed}
+              onValueChange={(value) => toggleNotificationPreference("tableConfirmed", value)}
+            />
+            <Switch
+              label="Waitlist promotions"
+              value={notificationPreferences.waitlistPromoted}
+              onValueChange={(value) => toggleNotificationPreference("waitlistPromoted", value)}
+            />
+            <Switch
+              label="Chat messages"
+              value={notificationPreferences.tableMessage}
+              onValueChange={(value) => toggleNotificationPreference("tableMessage", value)}
+            />
+            <Switch
+              label="Starting soon"
+              value={notificationPreferences.tableStartingSoon}
+              onValueChange={(value) => toggleNotificationPreference("tableStartingSoon", value)}
+            />
+          </>
+        ) : (
+          <Text text="Loading notification preferences..." size="sm" style={themed($body)} />
+        )}
       </View>
       <View style={themed($section)}>
         <Text

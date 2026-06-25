@@ -95,109 +95,126 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
         style={themed($muted)}
       />
 
-      <Text text="Activity" preset="bold" />
-      <View style={themed($chips)}>
-        {ACTIVITY_TYPES.map((item) => (
-          <Pressable
-            key={item}
-            onPress={() => {
-              setActivity(item)
-              setTitle(`${formatActivityLabel(item)} table`)
-            }}
-            style={themed([$chip, activity === item && $chipActive])}
-          >
-            <Text
-              text={formatActivityLabel(item)}
-              size="xs"
-              preset="bold"
-              style={themed(activity === item ? $chipTextActive : $chipText)}
-            />
-          </Pressable>
-        ))}
+      <View style={themed($previewCard)}>
+        <Text text={formatActivityLabel(activity)} size="xs" preset="bold" style={themed($muted)} />
+        <Text text={title.trim() || `${formatActivityLabel(activity)} table`} preset="heading" />
+        <Text
+          text={`${day === "today" ? "Today" : "Tomorrow"} ${time} · ${areaLabel || "Nearby"}`}
+        />
+        <View style={themed($previewMeta)}>
+          <Text text={vibe} size="xs" preset="bold" />
+          <Text text={`${maxSeats} seats`} size="xs" preset="bold" />
+          <Text text="Intro + confirmation required" size="xs" preset="bold" />
+        </View>
       </View>
 
-      <TextField label="Title" value={title} onChangeText={setTitle} />
+      <View style={themed($section)}>
+        <Text text="Activity" preset="bold" />
+        <View style={themed($chips)}>
+          {ACTIVITY_TYPES.map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => {
+                setActivity(item)
+                setTitle(`${formatActivityLabel(item)} table`)
+              }}
+              style={themed([$chip, activity === item && $chipActive])}
+            >
+              <Text
+                text={formatActivityLabel(item)}
+                size="xs"
+                preset="bold"
+                style={themed(activity === item ? $chipTextActive : $chipText)}
+              />
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={themed($section)}>
+        <TextField label="Title" value={title} onChangeText={setTitle} />
+        <TextField
+          label="Area"
+          value={areaLabel}
+          onChangeText={setAreaLabel}
+          placeholder="Kadikoy, Moda, Nisantasi..."
+        />
+      </View>
+
+      <View style={themed($section)}>
+        <Text text="When" preset="bold" />
+        <View style={themed($chips)}>
+          {(["today", "tomorrow"] as const).map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => setDay(item)}
+              style={themed([$chip, day === item && $chipActive])}
+            >
+              <Text
+                text={item === "today" ? "Today" : "Tomorrow"}
+                size="xs"
+                preset="bold"
+                style={themed(day === item ? $chipTextActive : $chipText)}
+              />
+            </Pressable>
+          ))}
+          {TIMES.map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => setTime(item)}
+              style={themed([$chip, time === item && $chipActive])}
+            >
+              <Text
+                text={item}
+                size="xs"
+                preset="bold"
+                style={themed(time === item ? $chipTextActive : $chipText)}
+              />
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={themed($section)}>
+        <Text text="Vibe and seats" preset="bold" />
+        <View style={themed($chips)}>
+          {VIBES.map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => setVibe(item)}
+              style={themed([$chip, vibe === item && $chipActive])}
+            >
+              <Text
+                text={item}
+                size="xs"
+                preset="bold"
+                style={themed(vibe === item ? $chipTextActive : $chipText)}
+              />
+            </Pressable>
+          ))}
+          {[3, 4, 5, 6].map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => setMaxSeats(item)}
+              style={themed([$chip, maxSeats === item && $chipActive])}
+            >
+              <Text
+                text={`${item} seats`}
+                size="xs"
+                preset="bold"
+                style={themed(maxSeats === item ? $chipTextActive : $chipText)}
+              />
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       <TextField
-        label="Area"
-        value={areaLabel}
-        onChangeText={setAreaLabel}
-        placeholder="Kadikoy, Moda, Nisantasi..."
-      />
-
-      <Text text="When" preset="bold" />
-      <View style={themed($chips)}>
-        {(["today", "tomorrow"] as const).map((item) => (
-          <Pressable
-            key={item}
-            onPress={() => setDay(item)}
-            style={themed([$chip, day === item && $chipActive])}
-          >
-            <Text
-              text={item === "today" ? "Today" : "Tomorrow"}
-              size="xs"
-              preset="bold"
-              style={themed(day === item ? $chipTextActive : $chipText)}
-            />
-          </Pressable>
-        ))}
-        {TIMES.map((item) => (
-          <Pressable
-            key={item}
-            onPress={() => setTime(item)}
-            style={themed([$chip, time === item && $chipActive])}
-          >
-            <Text
-              text={item}
-              size="xs"
-              preset="bold"
-              style={themed(time === item ? $chipTextActive : $chipText)}
-            />
-          </Pressable>
-        ))}
-      </View>
-
-      <Text text="Vibe" preset="bold" />
-      <View style={themed($chips)}>
-        {VIBES.map((item) => (
-          <Pressable
-            key={item}
-            onPress={() => setVibe(item)}
-            style={themed([$chip, vibe === item && $chipActive])}
-          >
-            <Text
-              text={item}
-              size="xs"
-              preset="bold"
-              style={themed(vibe === item ? $chipTextActive : $chipText)}
-            />
-          </Pressable>
-        ))}
-      </View>
-
-      <Text text="Seats" preset="bold" />
-      <View style={themed($chips)}>
-        {[3, 4, 5, 6].map((item) => (
-          <Pressable
-            key={item}
-            onPress={() => setMaxSeats(item)}
-            style={themed([$chip, maxSeats === item && $chipActive])}
-          >
-            <Text
-              text={`${item}`}
-              size="xs"
-              preset="bold"
-              style={themed(maxSeats === item ? $chipTextActive : $chipText)}
-            />
-          </Pressable>
-        ))}
-      </View>
-
-      <TextField
-        label="Note"
+        label="What should people know?"
         value={note}
         onChangeText={setNote}
         multiline
-        placeholder="Short context. Example: easy pace, subtitles, casual after-work coffee."
+        placeholder="Example: easy pace, subtitles, casual after-work coffee."
       />
       <Button text="Use current location" onPress={() => void applyCurrentLocation()} />
       {!!locationMessage ? <InlineNotice variant="success" text={locationMessage} /> : null}
@@ -219,6 +236,25 @@ const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 
 const $muted: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.textDim,
+})
+
+const $previewCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral100,
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  gap: spacing.xs,
+  padding: spacing.lg,
+})
+
+const $previewMeta: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: spacing.sm,
+})
+
+const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  gap: spacing.sm,
 })
 
 const $chips: ThemedStyle<ViewStyle> = ({ spacing }) => ({

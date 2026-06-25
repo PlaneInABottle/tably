@@ -28,6 +28,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller"
 import { initialWindowMetrics, SafeAreaProvider } from "react-native-safe-area-context"
 
 import { AppToasts } from "./components/AppToasts"
+import { PushNotificationManager } from "./components/PushNotificationManager"
 import { AuthProvider } from "./context/AuthContext"
 import { initI18n } from "./i18n"
 import { AppNavigator } from "./navigators/AppNavigator"
@@ -143,6 +144,7 @@ export function App() {
                   initialState={initialNavigationState}
                   onStateChange={onNavigationStateChange}
                 />
+                <PushNotificationManager />
                 <AppToasts />
               </BottomSheetModalProvider>
             </ThemeProvider>

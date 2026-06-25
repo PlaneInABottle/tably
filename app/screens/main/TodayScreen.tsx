@@ -7,12 +7,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Button } from "@/components/Button"
 import { InlineNotice } from "@/components/InlineNotice"
+import { TableMomentumBanner } from "@/components/TableMomentumBanner"
 import { Text } from "@/components/Text"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { listSocialTables } from "@/services/tables/tableService"
 import {
   formatActivityLabel,
   formatPlanTime,
+  getSeatsLeft,
   getMemberStatusLabel,
   getTableStatusLabel,
 } from "@/services/tables/tableUtils"
@@ -52,6 +54,7 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets()
   const [mode, setMode] = useState<ViewMode>("list")
   const [tables, setTables] = useState<SocialTableSummary[]>([])
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -98,8 +101,13 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
     navigation.navigate("TableDetail", { tableId })
   }
 
+  const selectedTable = useMemo(
+    () => tables.find((table) => table.id === selectedTableId) ?? null,
+    [selectedTableId, tables],
+  )
+
   function renderTableCard(table: SocialTableSummary) {
-    const seatsLeft = Math.max(table.maxSeats - table.activeCount, 0)
+    const seatsLeft = getSeatsLeft(table.maxSeats, table.activeCount)
     return (
       <Pressable
         key={table.id}
@@ -138,6 +146,12 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
           numberOfLines={2}
           style={themed($mutedText)}
         />
+        <TableMomentumBanner
+          status={table.myMemberStatus}
+          introDueAt={table.introDueAt}
+          confirmDueAt={table.confirmDueAt}
+          compact
+        />
         <View style={themed($momentumRow)}>
           <Text text={`${table.confirmedCount} confirmed`} size="xs" preset="bold" />
           <Text text={`${seatsLeft} seats left`} size="xs" preset="bold" />
@@ -162,10 +176,14 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
             <Marker
               key={table.id}
               coordinate={table.coordinate}
-              onPress={() => openTable(table.id)}
+              onPress={() => setSelectedTableId(table.id)}
             >
               <View
-                style={[themed($marker), { backgroundColor: statusColor(table.status, colors) }]}
+                style={[
+                  themed($marker),
+                  { backgroundColor: statusColor(table.status, colors) },
+                  selectedTableId === table.id && themed($markerSelected),
+                ]}
               >
                 <Text
                   text={formatActivityLabel(table.activity).charAt(0)}
@@ -180,8 +198,45 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
           text={isLoading ? "Searching..." : "Search this area"}
           onPress={() => void loadTables()}
           disabled={isLoading}
-          style={themed($mapSearchButton)}
+          style={themed($mapSearchButton(!!selectedTable))}
         />
+        {selectedTable ? (
+          <View style={themed($mapPreviewCard)}>
+            <View style={themed($cardTopRow)}>
+              <Text text={formatActivityLabel(selectedTable.activity)} size="xs" preset="bold" />
+              <Text
+                text={getTableStatusLabel(selectedTable.status, selectedTable.confirmedCount)}
+                size="xs"
+                preset="bold"
+                style={themed($statusText)}
+              />
+            </View>
+            <Text text={selectedTable.title} preset="subheading" numberOfLines={1} />
+            <Text
+              text={`${formatPlanTime(selectedTable.startsAt)} · ${selectedTable.areaLabel}`}
+              size="sm"
+              style={themed($mutedText)}
+              numberOfLines={1}
+            />
+            <TableMomentumBanner
+              status={selectedTable.myMemberStatus}
+              introDueAt={selectedTable.introDueAt}
+              confirmDueAt={selectedTable.confirmDueAt}
+              compact
+            />
+            <View style={themed($previewFooter)}>
+              <Text
+                text={`${selectedTable.confirmedCount} confirmed · ${getSeatsLeft(
+                  selectedTable.maxSeats,
+                  selectedTable.activeCount,
+                )} seats left`}
+                size="xs"
+                style={themed($mutedText)}
+              />
+              <Button text="Open table" onPress={() => openTable(selectedTable.id)} />
+            </View>
+          </View>
+        ) : null}
       </View>
     )
   }
@@ -354,12 +409,14 @@ const $map: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
 })
 
-const $mapSearchButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  bottom: spacing.md,
-  left: spacing.md,
-  position: "absolute",
-  right: spacing.md,
-})
+const $mapSearchButton =
+  (hasPreview: boolean): ThemedStyle<ViewStyle> =>
+  ({ spacing }) => ({
+    bottom: hasPreview ? 180 : spacing.md,
+    left: spacing.md,
+    position: "absolute",
+    right: spacing.md,
+  })
 
 const $marker: ThemedStyle<ViewStyle> = () => ({
   alignItems: "center",
@@ -369,6 +426,32 @@ const $marker: ThemedStyle<ViewStyle> = () => ({
   width: 36,
 })
 
+const $markerSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  borderColor: colors.palette.neutral100,
+  borderWidth: 3,
+  transform: [{ scale: 1.12 }],
+})
+
 const $markerText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.palette.neutral100,
+})
+
+const $mapPreviewCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral100,
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  bottom: spacing.md,
+  gap: spacing.xs,
+  left: spacing.md,
+  padding: spacing.md,
+  position: "absolute",
+  right: spacing.md,
+})
+
+const $previewFooter: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  alignItems: "center",
+  flexDirection: "row",
+  gap: spacing.sm,
+  justifyContent: "space-between",
 })

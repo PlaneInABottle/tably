@@ -64,3 +64,94 @@ export function formatPlanTime(value: string): string {
 
   return `${day} ${date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`
 }
+
+export function getActionDeadline(
+  status: MemberStatus | null | undefined,
+  introDueAt?: string | null,
+  confirmDueAt?: string | null,
+): string | null {
+  if (status === "pending_intro") return introDueAt ?? null
+  if (status === "pending_confirm") return confirmDueAt ?? null
+  return null
+}
+
+export function formatCountdown(value?: string | null, now = new Date()): string {
+  if (!value) return ""
+  const deadline = new Date(value)
+  if (Number.isNaN(deadline.getTime())) return ""
+
+  const diffMs = deadline.getTime() - now.getTime()
+  if (diffMs <= 0) return "expired"
+
+  const diffMinutes = Math.ceil(diffMs / 60000)
+  if (diffMinutes < 60) return `${diffMinutes} min`
+
+  const hours = Math.floor(diffMinutes / 60)
+  const minutes = diffMinutes % 60
+  if (minutes === 0) return `${hours} hr`
+  return `${hours} hr ${minutes} min`
+}
+
+export function formatDeadlineClock(value?: string | null): string {
+  if (!value) return ""
+  const deadline = new Date(value)
+  if (Number.isNaN(deadline.getTime())) return ""
+  return deadline.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+}
+
+export function getMomentumMessage(
+  status: MemberStatus | null | undefined,
+  introDueAt?: string | null,
+  confirmDueAt?: string | null,
+  now = new Date(),
+): string {
+  if (status === "pending_intro") {
+    const countdown = formatCountdown(introDueAt, now)
+    return countdown === "expired"
+      ? "Seat hold expired. Refreshing will release it."
+      : `Seat held · answer intro${countdown ? ` in ${countdown}` : ""}`
+  }
+
+  if (status === "pending_confirm") {
+    const clock = formatDeadlineClock(confirmDueAt)
+    const countdown = formatCountdown(confirmDueAt, now)
+    if (countdown === "expired") return "Confirmation window expired. Refreshing will release it."
+    return clock ? `Confirm by ${clock}` : "Confirm your seat"
+  }
+
+  if (status === "confirmed") return "You are confirmed"
+  if (status === "waitlisted") return "Waitlisted · we will notify you if a seat opens"
+  if (status === "replaced") return "Seat released"
+  return "Join to hold a seat"
+}
+
+export function getSeatsLeft(maxSeats: number, activeCount: number): number {
+  return Math.max(maxSeats - activeCount, 0)
+}
+
+export function getChatPromptChips(
+  status: MemberStatus | null | undefined,
+  startsAt: string,
+  hasMessages: boolean,
+  now = new Date(),
+): string[] {
+  const start = new Date(startsAt)
+  const startsSoon =
+    !Number.isNaN(start.getTime()) &&
+    start.getTime() > now.getTime() &&
+    start.getTime() - now.getTime() <= 60 * 60 * 1000
+
+  if (startsSoon && status === "confirmed") {
+    return ["I'm on my way", "I arrived", "Where are you sitting?"]
+  }
+
+  if (status === "confirmed") {
+    return ["Confirm venue", "Share what you're wearing", "Say if you're running late"]
+  }
+
+  if (!hasMessages) {
+    return ["Share arrival time", "Suggest exact spot", "Ask who is coming"]
+  }
+
+  return ["Share arrival time", "Confirm venue", "Ask who is coming"]
+}

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Button } from "@/components/Button"
 import { InlineNotice } from "@/components/InlineNotice"
 import { Screen } from "@/components/Screen"
+import { TableMomentumBanner } from "@/components/TableMomentumBanner"
 import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
 import { useAuth } from "@/context/AuthContext"
@@ -36,6 +37,7 @@ import {
 import {
   formatActivityLabel,
   formatPlanTime,
+  getChatPromptChips,
   getMemberStatusLabel,
   getTableStatusLabel,
 } from "@/services/tables/tableUtils"
@@ -324,21 +326,13 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                 <Text text={getTableStatusLabel(table.status)} size="xs" preset="bold" />
                 <Text text={getMemberStatusLabel(status)} size="xs" preset="bold" />
               </View>
-              <View style={themed($safetyRow)}>
-                <Button
-                  text="Report table"
-                  onPress={() => openReportReasons("table", table.id)}
-                  style={themed($safetyButton)}
-                />
-                {table.creator.id !== user?.id ? (
-                  <Button
-                    text="Block creator"
-                    onPress={confirmBlockCreator}
-                    style={themed($safetyButton)}
-                  />
-                ) : null}
-              </View>
             </View>
+
+            <TableMomentumBanner
+              status={status}
+              introDueAt={table.introDueAt}
+              confirmDueAt={table.confirmDueAt}
+            />
 
             <View style={themed($section)}>
               <Text text="People" preset="subheading" />
@@ -413,6 +407,19 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                   />
                 ) : null}
                 {messages.map(renderMessage)}
+                <View style={themed($promptChips)}>
+                  {getChatPromptChips(status, table.startsAt, messages.length > 0).map((prompt) => (
+                    <Pressable
+                      key={prompt}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use prompt ${prompt}`}
+                      onPress={() => setDraft(prompt)}
+                      style={themed($promptChip)}
+                    >
+                      <Text text={prompt} size="xs" preset="bold" />
+                    </Pressable>
+                  ))}
+                </View>
                 <View style={themed($composer)}>
                   <TextField
                     value={draft}
@@ -429,6 +436,29 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                 <Button text="Leave table" onPress={() => void handleLeave()} />
               </View>
             ) : null}
+
+            <View style={themed($safetySection)}>
+              <Text text="Safety" preset="subheading" />
+              <Text
+                text="Report the table or block the creator if something feels unsafe."
+                size="sm"
+                style={themed($muted)}
+              />
+              <View style={themed($safetyRow)}>
+                <Button
+                  text="Report table"
+                  onPress={() => openReportReasons("table", table.id)}
+                  style={themed($safetyButton)}
+                />
+                {table.creator.id !== user?.id ? (
+                  <Button
+                    text="Block creator"
+                    onPress={confirmBlockCreator}
+                    style={themed($safetyButton)}
+                  />
+                ) : null}
+              </View>
+            </View>
           </>
         ) : null}
       </Screen>
@@ -486,6 +516,14 @@ const $safetyRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 
 const $safetyButton: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
+})
+
+const $safetySection: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  gap: spacing.sm,
+  padding: spacing.md,
 })
 
 const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -570,6 +608,20 @@ const $composer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: "flex-end",
   flexDirection: "row",
   gap: spacing.sm,
+})
+
+const $promptChips: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: spacing.sm,
+})
+
+const $promptChip: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  borderColor: colors.separator,
+  borderRadius: 999,
+  borderWidth: 1,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.xs,
 })
 
 const $composerInput: ThemedStyle<ViewStyle> = () => ({
