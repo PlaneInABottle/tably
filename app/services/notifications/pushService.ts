@@ -1,7 +1,5 @@
 import { Platform } from "react-native"
 import Constants from "expo-constants"
-import * as Device from "expo-device"
-import * as Notifications from "expo-notifications"
 
 import { navigate } from "@/navigators/navigationUtilities"
 import { supabase } from "@/services/supabase/client"
@@ -31,14 +29,34 @@ type AnySupabase = typeof supabase & {
 
 const db = supabase as AnySupabase
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: true,
-  }),
-})
+type NativeNotifications = {
+  Device: typeof import("expo-device")
+  Notifications: typeof import("expo-notifications")
+}
+
+let nativeNotifications: NativeNotifications | null | undefined
+
+async function getNativeNotifications(): Promise<NativeNotifications | null> {
+  if (nativeNotifications !== undefined) return nativeNotifications
+
+  try {
+    const Device = require("expo-device") as typeof import("expo-device")
+    const Notifications = require("expo-notifications") as typeof import("expo-notifications")
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: true,
+      }),
+    })
+    nativeNotifications = { Device, Notifications }
+  } catch {
+    nativeNotifications = null
+  }
+
+  return nativeNotifications
+}
 
 function normalizeError(message?: string): string {
   if (!message) return "Notification request failed. Please try again."
@@ -60,16 +78,18 @@ function normalizePreferences(row: PreferencesRow): NotificationPreferences {
 
 async function setupAndroidChannels() {
   if (Platform.OS !== "android") return
+  const native = await getNativeNotifications()
+  if (!native) return
 
-  await Notifications.setNotificationChannelAsync("momentum", {
+  await native.Notifications.setNotificationChannelAsync("momentum", {
     name: "Table momentum",
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: native.Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
   })
 
-  await Notifications.setNotificationChannelAsync("messages", {
+  await native.Notifications.setNotificationChannelAsync("messages", {
     name: "Messages",
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: native.Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
   })
 }
@@ -80,19 +100,22 @@ function getProjectId(): string | undefined {
 
 export async function registerPushToken(): Promise<ServiceResult<{ token: string | null }>> {
   await setupAndroidChannels()
+  const native = await getNativeNotifications()
 
-  if (!Device.isDevice) return { ok: true, data: { token: null } }
+  if (!native || !native.Device.isDevice) return { ok: true, data: { token: null } }
 
-  const permission = await Notifications.getPermissionsAsync()
+  const permission = await native.Notifications.getPermissionsAsync()
   const finalPermission =
-    permission.status === "granted" ? permission : await Notifications.requestPermissionsAsync()
+    permission.status === "granted"
+      ? permission
+      : await native.Notifications.requestPermissionsAsync()
 
   if (finalPermission.status !== "granted") return { ok: true, data: { token: null } }
 
   const projectId = getProjectId()
   if (!projectId) return { ok: false, error: "Notification project is not configured." }
 
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data
+  const token = (await native.Notifications.getExpoPushTokenAsync({ projectId })).data
   const { error } = await db.rpc("upsert_push_token", {
     p_token: token,
     p_platform: Platform.OS,
@@ -139,15 +162,24 @@ function openNotificationData(data: Record<string, unknown>) {
 }
 
 export function listenForNotificationResponses(): () => void {
-  const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    openNotificationData(response.notification.request.content.data as Record<string, unknown>)
+  let remove = () => {}
+  void getNativeNotifications().then((native) => {
+    if (!native) return
+    const responseSubscription = native.Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        openNotificationData(response.notification.request.content.data as Record<string, unknown>)
+      },
+    )
+    remove = () => responseSubscription.remove()
   })
 
-  void Notifications.getLastNotificationResponseAsync().then((response) => {
-    if (response) {
-      openNotificationData(response.notification.request.content.data as Record<string, unknown>)
-    }
-  })
+  void getNativeNotifications()
+    .then((native) => native?.Notifications.getLastNotificationResponseAsync())
+    .then((response) => {
+      if (response) {
+        openNotificationData(response.notification.request.content.data as Record<string, unknown>)
+      }
+    })
 
-  return () => responseSubscription.remove()
+  return () => remove()
 }
