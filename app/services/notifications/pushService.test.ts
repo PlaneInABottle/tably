@@ -1,4 +1,5 @@
-import { NativeModules, Platform } from "react-native"
+import { Platform } from "react-native"
+import * as Notifications from "expo-notifications"
 
 import { supabase } from "@/services/supabase/client"
 
@@ -15,7 +16,7 @@ jest.mock("@/services/supabase/client", () => ({
 }))
 
 jest.mock("expo-device", () => ({
-  isDevice: true,
+  isDevice: false,
 }))
 
 jest.mock("expo-constants", () => ({
@@ -38,8 +39,6 @@ jest.mock("expo-notifications", () => ({
 describe("pushService", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    NativeModules.ExpoDevice = {}
-    NativeModules.ExpoPushTokenManager = {}
   })
 
   it("registers an Expo push token through RPC", async () => {
@@ -57,6 +56,19 @@ describe("pushService", () => {
       p_platform: Platform.OS,
       p_device_id: "session-1",
     })
+  })
+
+  it("returns a normalized error when Expo token registration rejects", async () => {
+    jest
+      .mocked(Notifications.getExpoPushTokenAsync)
+      .mockRejectedValue(new Error("Network request failed"))
+
+    await expect(registerPushToken()).resolves.toEqual({
+      ok: false,
+      error: "Notification request failed. Please try again.",
+    })
+
+    expect(supabase.rpc).not.toHaveBeenCalled()
   })
 
   it("normalizes notification preferences from RPC rows", async () => {

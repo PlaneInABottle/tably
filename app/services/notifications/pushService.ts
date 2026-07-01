@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from "react-native"
+import { Platform } from "react-native"
 import Constants from "expo-constants"
 
 import { navigate } from "@/navigators/navigationUtilities"
@@ -40,11 +40,6 @@ async function getNativeNotifications(): Promise<NativeNotifications | null> {
   if (nativeNotifications !== undefined) return nativeNotifications
 
   try {
-    if (!NativeModules.ExpoDevice || !NativeModules.ExpoPushTokenManager) {
-      nativeNotifications = null
-      return nativeNotifications
-    }
-
     const Device = require("expo-device") as typeof import("expo-device")
     const Notifications = require("expo-notifications") as typeof import("expo-notifications")
     Notifications.setNotificationHandler({
@@ -67,6 +62,8 @@ function normalizeError(message?: string): string {
   if (!message) return "Notification request failed. Please try again."
   if (message.includes("Authentication required")) return "Please sign in to use notifications."
   if (message.includes("Invalid push token")) return "Notification token was invalid."
+  if (message.includes("Project ID not found")) return "Notification project is not configured."
+  if (message.includes("permission")) return "Notification permission was not granted."
   return "Notification request failed. Please try again."
 }
 
@@ -104,31 +101,36 @@ function getProjectId(): string | undefined {
 }
 
 export async function registerPushToken(): Promise<ServiceResult<{ token: string | null }>> {
-  await setupAndroidChannels()
-  const native = await getNativeNotifications()
+  try {
+    await setupAndroidChannels()
+    const native = await getNativeNotifications()
 
-  if (!native || !native.Device.isDevice) return { ok: true, data: { token: null } }
+    if (!native) return { ok: true, data: { token: null } }
 
-  const permission = await native.Notifications.getPermissionsAsync()
-  const finalPermission =
-    permission.status === "granted"
-      ? permission
-      : await native.Notifications.requestPermissionsAsync()
+    const permission = await native.Notifications.getPermissionsAsync()
+    const finalPermission =
+      permission.status === "granted"
+        ? permission
+        : await native.Notifications.requestPermissionsAsync()
 
-  if (finalPermission.status !== "granted") return { ok: true, data: { token: null } }
+    if (finalPermission.status !== "granted") return { ok: true, data: { token: null } }
 
-  const projectId = getProjectId()
-  if (!projectId) return { ok: false, error: "Notification project is not configured." }
+    const projectId = getProjectId()
+    if (!projectId) return { ok: false, error: "Notification project is not configured." }
 
-  const token = (await native.Notifications.getExpoPushTokenAsync({ projectId })).data
-  const { error } = await db.rpc("upsert_push_token", {
-    p_token: token,
-    p_platform: Platform.OS,
-    p_device_id: Constants.sessionId ?? undefined,
-  })
+    const token = (await native.Notifications.getExpoPushTokenAsync({ projectId })).data
+    const { error } = await db.rpc("upsert_push_token", {
+      p_token: token,
+      p_platform: Platform.OS,
+      p_device_id: Constants.sessionId ?? undefined,
+    })
 
-  if (error) return { ok: false, error: normalizeError(error.message) }
-  return { ok: true, data: { token } }
+    if (error) return { ok: false, error: normalizeError(error.message) }
+    return { ok: true, data: { token } }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : undefined
+    return { ok: false, error: normalizeError(message) }
+  }
 }
 
 export async function unregisterPushToken(token: string): Promise<ServiceResult> {

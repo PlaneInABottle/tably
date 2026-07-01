@@ -13,7 +13,17 @@ export function PushNotificationManager() {
 
   useEffect(() => {
     if (status !== "signedIn") return
-    void registerPushToken()
+    void registerPushToken().then((result) => {
+      if (!result.ok) {
+        console.warn("Push registration failed", result.error)
+        return
+      }
+      if (!result.data.token) {
+        console.warn("Push token unavailable")
+        return
+      }
+      if (__DEV__) console.log("Push token registered")
+    })
   }, [status])
 
   return null
