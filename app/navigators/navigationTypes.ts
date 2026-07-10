@@ -20,13 +20,6 @@ export type MainTabParamList = {
   Profile: undefined
 }
 
-export type DemoTabParamList = MainTabParamList & {
-  DemoCommunity: undefined
-  DemoShowroom: { queryIndex?: string; itemIndex?: string }
-  DemoDebug: undefined
-  DemoPodcastList: undefined
-}
-
 // App Stack Navigator types
 export type AppStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>
@@ -47,8 +40,6 @@ export type AppStackParamList = {
         returnTo?: "Map" | "DiveEvent" | "Profile"
       }
     | undefined
-  // 🔥 Your screens go here
-  // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
 }
 
 export type AppStackScreenProps<T extends keyof AppStackParamList> = NativeStackScreenProps<
@@ -63,11 +54,6 @@ export type AuthStackScreenProps<T extends keyof AuthStackParamList> = Composite
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, T>,
-  AppStackScreenProps<keyof AppStackParamList>
->
-
-export type DemoTabScreenProps<T extends keyof DemoTabParamList> = CompositeScreenProps<
-  BottomTabScreenProps<DemoTabParamList, T>,
   AppStackScreenProps<keyof AppStackParamList>
 >
 

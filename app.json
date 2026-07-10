@@ -9,8 +9,6 @@
   "updates": {
     "fallbackToCacheTimeout": 0
   },
-  "newArchEnabled": true,
-  "jsEngine": "hermes",
   "assetBundlePatterns": [
     "**/*"
   ],
@@ -21,8 +19,7 @@
       "foregroundImage": "./assets/images/app-icon-android-adaptive-foreground.png",
       "backgroundImage": "./assets/images/app-icon-android-adaptive-background.png"
     },
-    "allowBackup": false,
-    "edgeToEdgeEnabled": true
+    "allowBackup": false
   },
   "ios": {
     "icon": "./assets/images/app-icon-ios.png",
@@ -34,7 +31,6 @@
     "bundler": "metro"
   },
   "plugins": [
-    "expo-localization",
     "expo-font",
     [
       "expo-splash-screen",
@@ -64,7 +60,8 @@
     [
       "expo-image-picker",
       {
-        "photosPermission": "Tably uses your photo library only when you choose a profile avatar."
+        "photosPermission": "Tably uses your photo library only when you choose a profile avatar.",
+        "microphonePermission": false
       }
     ],
     [

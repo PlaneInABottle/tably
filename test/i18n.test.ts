@@ -1,12 +1,11 @@
 import { exec } from "child_process"
 
 import en from "../app/i18n/en"
+import { formatDate } from "../app/utils/formatDate"
 
 // Use this array for keys that for whatever reason aren't greppable so they
 // don't hold your test suite hostage by always failing.
 const EXCEPTIONS: string[] = [
-  // "welcomeScreen:readyForLaunch",
-
   /**
    * This translation key actually shows up in a comment describing the usage of the translate
    * function in the app/i18n/translate.ts file. Because the grep command in the i18n test below
@@ -52,6 +51,15 @@ function iterate(obj, stack, array) {
  */
 
 describe("i18n", () => {
+  test("keeps the English catalog product-only", () => {
+    expect(en).not.toHaveProperty("welcomeScreen")
+    expect(Object.keys(en).some((namespace) => namespace.startsWith("demo"))).toBe(false)
+  })
+
+  test("formats dates in deterministic US English", () => {
+    expect(formatDate("2025-01-02")).toBe("Jan 02, 2025")
+  })
+
   test("There are no missing keys", (done) => {
     // Actual command output:
     // grep "[T\|t]x=[{]\?\"\S*\"[}]\?\|translate(\"\S*\"" -ohr './app' | grep -o "\".*\""

@@ -35,11 +35,6 @@ jest.mock("i18next", () => ({
   },
 }))
 
-jest.mock("expo-localization", () => ({
-  ...jest.requireActual("expo-localization"),
-  getLocales: () => [{ languageTag: "en-US", textDirection: "ltr" }],
-}))
-
 jest.mock("../app/i18n/index.ts", () => ({
   i18n: {
     isInitialized: true,

@@ -24,18 +24,16 @@ export const ProfileScreen: FC = () => {
   const { themed } = useAppTheme()
   const navigation = useNavigation<AppStackScreenProps<"Main">["navigation"]>()
   const { profile, user, updateProfile, refreshProfile } = useAuth()
-  const [displayName, setDisplayName] = useState("")
-  const [summary, setSummary] = useState("")
+  const [displayNameOverride, setDisplayName] = useState<string>()
+  const [summaryOverride, setSummary] = useState<string>()
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
-  useEffect(() => {
-    setDisplayName(profile?.display_name ?? "")
-    setSummary(profile?.summary ?? "")
-  }, [profile?.display_name, profile?.summary])
+  const displayName = displayNameOverride ?? profile?.display_name ?? ""
+  const summary = summaryOverride ?? profile?.summary ?? ""
 
   useEffect(() => {
     let isActive = true
@@ -67,8 +65,13 @@ export const ProfileScreen: FC = () => {
       is_first_login: false,
     })
 
-    if (result.ok) setMessage("Profile saved")
-    else setError(result.error)
+    if (result.ok) {
+      setDisplayName(undefined)
+      setSummary(undefined)
+      setMessage("Profile saved")
+    } else {
+      setError(result.error)
+    }
     setIsSaving(false)
   }
 

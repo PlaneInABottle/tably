@@ -1,8 +1,11 @@
+import { ActivityIndicator, TextStyle, View, ViewStyle } from "react-native"
 import { NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 
+import { Text } from "@/components/Text"
 import Config from "@/config"
 import { useAuth } from "@/context/AuthContext"
+import { translate } from "@/i18n/translate"
 import { UpdatePasswordScreen } from "@/screens/auth/UpdatePasswordScreen"
 import { ErrorBoundary } from "@/screens/ErrorScreen/ErrorBoundary"
 import { ChangePasswordScreen } from "@/screens/main/ChangePasswordScreen"
@@ -10,6 +13,7 @@ import { LocationPickerScreen } from "@/screens/main/LocationPickerScreen"
 import { SettingsScreen } from "@/screens/main/SettingsScreen"
 import { TableDetailScreen } from "@/screens/main/TableDetailScreen"
 import { useAppTheme } from "@/theme/context"
+import type { ThemedStyle } from "@/theme/types"
 
 import { AuthNavigator } from "./AuthNavigator"
 import { MainTabNavigator } from "./MainTabNavigator"
@@ -20,13 +24,34 @@ const exitRoutes = Config.exitRoutes
 
 const Stack = createNativeStackNavigator<AppStackParamList>()
 
+function AuthLoadingState() {
+  const {
+    themed,
+    theme: { colors },
+  } = useAppTheme()
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={translate("common:loading")}
+      accessibilityLiveRegion="polite"
+      accessibilityRole="progressbar"
+      testID="auth-loading-state"
+      style={themed($loadingContainer)}
+    >
+      <ActivityIndicator color={colors.tint} size="large" />
+      <Text tx="common:loading" style={themed($loadingText)} />
+    </View>
+  )
+}
+
 const AppStack = () => {
   const { status } = useAuth()
   const {
     theme: { colors },
   } = useAppTheme()
 
-  if (status === "initializing") return null
+  if (status === "initializing") return <AuthLoadingState />
 
   return (
     <Stack.Navigator
@@ -66,3 +91,17 @@ export const AppNavigator = (props: NavigationProps) => {
     </NavigationContainer>
   )
 }
+
+const $loadingContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  alignItems: "center",
+  backgroundColor: colors.background,
+  flex: 1,
+  gap: spacing.sm,
+  justifyContent: "center",
+  paddingHorizontal: spacing.lg,
+})
+
+const $loadingText: ThemedStyle<TextStyle> = ({ colors }) => ({
+  color: colors.textDim,
+  textAlign: "center",
+})

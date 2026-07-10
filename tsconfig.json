@@ -22,7 +22,10 @@
     ],
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
+    "types": [
+      "jest",
+      "node"
+    ],
     "paths": {
       "@/*": [
         "./app/*"

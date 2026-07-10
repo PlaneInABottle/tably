@@ -52,19 +52,24 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
   useEffect(() => {
+    let isActive = true
+
+    async function loadBlockedUsers() {
+      const result = await listBlockedUsers()
+      if (isActive && result.ok) setBlockedUsers(result.data)
+    }
+
+    async function loadNotificationPreferences() {
+      const result = await getNotificationPreferences()
+      if (isActive && result.ok) setNotificationPreferences(result.data)
+    }
+
     void loadBlockedUsers()
     void loadNotificationPreferences()
+    return () => {
+      isActive = false
+    }
   }, [])
-
-  async function loadBlockedUsers() {
-    const result = await listBlockedUsers()
-    if (result.ok) setBlockedUsers(result.data)
-  }
-
-  async function loadNotificationPreferences() {
-    const result = await getNotificationPreferences()
-    if (result.ok) setNotificationPreferences(result.data)
-  }
 
   async function toggleNotificationPreference(key: keyof NotificationPreferences, value: boolean) {
     if (!notificationPreferences) return

@@ -1,4 +1,4 @@
-import { ComponentProps, useEffect, useRef, useState } from "react"
+import { ComponentProps, useEffect, useState } from "react"
 import { Animated, Easing, TextStyle, View, ViewStyle } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -18,8 +18,8 @@ export function AppToasts() {
   const insets = useSafeAreaInsets()
   const { themed, theme } = useAppTheme()
   const [toast, setToast] = useState<AppToastMessage | null>(null)
-  const opacity = useRef(new Animated.Value(0)).current
-  const translateY = useRef(new Animated.Value(-8)).current
+  const [opacity] = useState(() => new Animated.Value(0))
+  const [translateY] = useState(() => new Animated.Value(-8))
 
   useEffect(() => {
     return subscribeToToasts(setToast)
