@@ -30,16 +30,6 @@ export type AppStackParamList = {
   TableDetail: {
     tableId: string
   }
-  LocationPicker:
-    | {
-        initialLatitude?: number
-        initialLongitude?: number
-        mode?: "create" | "edit"
-        locationId?: string
-        initialLabel?: string
-        returnTo?: "Map" | "DiveEvent" | "Profile"
-      }
-    | undefined
 }
 
 export type AppStackScreenProps<T extends keyof AppStackParamList> = NativeStackScreenProps<

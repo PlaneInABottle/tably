@@ -23,7 +23,6 @@ import { ViewStyle } from "react-native"
 import { useFonts } from "expo-font"
 import * as Linking from "expo-linking"
 import * as SplashScreen from "expo-splash-screen"
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { KeyboardProvider } from "react-native-keyboard-controller"
 import { initialWindowMetrics, SafeAreaProvider } from "react-native-safe-area-context"
@@ -72,7 +71,6 @@ const config = {
     },
     UpdatePassword: "update-password",
     ChangePassword: "change-password",
-    LocationPicker: "location-picker",
     Main: {
       screens: {
         Today: "today",
@@ -160,15 +158,13 @@ export function App() {
         <KeyboardProvider>
           <AuthProvider>
             <ThemeProvider>
-              <BottomSheetModalProvider>
-                <AppNavigator
-                  linking={linking}
-                  initialState={initialNavigationState}
-                  onStateChange={onNavigationStateChange}
-                />
-                <PushNotificationManager />
-                <AppToasts />
-              </BottomSheetModalProvider>
+              <AppNavigator
+                linking={linking}
+                initialState={initialNavigationState}
+                onStateChange={onNavigationStateChange}
+              />
+              <PushNotificationManager />
+              <AppToasts />
             </ThemeProvider>
           </AuthProvider>
         </KeyboardProvider>

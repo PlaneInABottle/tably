@@ -4,7 +4,7 @@ Use these repo-specific instructions in addition to the global Codex instruction
 
 ## Project Facts
 
-- This is an Expo React Native app using Expo 55, React Native 0.83, TypeScript, Supabase, React Navigation, Gorhom Bottom Sheet, and React Native Maps.
+- This is an Expo React Native app using Expo 57, React Native 0.86, TypeScript, Supabase, React Navigation, and React Native Maps.
 - Use `pnpm` for package scripts.
 - The installed dev-client/app config bundle id is `com.tably.app`. Verify App Store Connect separately before release work.
 - Prefer the iPhone 17 Pro Max simulator for local iOS verification unless the user asks for another device.
@@ -23,7 +23,7 @@ Load the relevant project skill before changing code in these areas:
 - Prefer `app/i18n/*.ts` for polished flows. Early Tably v1 screens may use local strings while the domain is moving quickly; consolidate them before release.
 - Service functions return `ServiceResult`-style discriminated unions. Normalize backend errors in the service that owns the call.
 - Supabase app code should generally call RPCs or Edge Functions, not raw table mutations, unless a migration/service contract explicitly supports it.
-- When touching external-library behavior that is subtle, check Context7 or official docs first. This especially applies to `@gorhom/bottom-sheet`, `react-native-maps`, Supabase, EAS, and Expo APIs.
+- When touching external-library behavior that is subtle, check Context7 or official docs first. This especially applies to `react-native-maps`, Supabase, EAS, and Expo APIs.
 
 ## Verification
 

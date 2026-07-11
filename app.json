@@ -9,9 +9,7 @@
   "updates": {
     "fallbackToCacheTimeout": 0
   },
-  "assetBundlePatterns": [
-    "**/*"
-  ],
+  "assetBundlePatterns": ["**/*"],
   "android": {
     "icon": "./assets/images/app-icon-android-legacy.png",
     "package": "com.tably.app",
@@ -23,7 +21,7 @@
   },
   "ios": {
     "icon": "./assets/images/app-icon-ios.png",
-    "supportsTablet": true,
+    "supportsTablet": false,
     "bundleIdentifier": "com.tably.app"
   },
   "web": {
@@ -38,7 +36,7 @@
         "image": "./assets/images/app-icon-android-adaptive-foreground.png",
         "imageWidth": 300,
         "resizeMode": "contain",
-        "backgroundColor": "#191015"
+        "backgroundColor": "#F4F2F1"
       }
     ],
     [
@@ -67,7 +65,7 @@
     [
       "expo-notifications",
       {
-        "color": "#191015",
+        "color": "#C76542",
         "defaultChannel": "momentum"
       }
     ],

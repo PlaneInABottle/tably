@@ -89,6 +89,7 @@ web-build/
 .env.*.local
 
 /coverage
+/tably-*.png
 
 # Dependency Graph Visualizations
 app-dependency-graph.svg

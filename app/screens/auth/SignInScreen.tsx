@@ -1,6 +1,7 @@
 import { FC, useState } from "react"
 import { TextStyle, View, ViewStyle } from "react-native"
 
+import { BrandHeader } from "@/components/BrandHeader"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -39,10 +40,11 @@ export const SignInScreen: FC<SignInScreenProps> = ({ navigation }) => {
   return (
     <Screen
       preset="auto"
-      keyboardShouldPersistTaps="never"
+      keyboardShouldPersistTaps="handled"
       safeAreaEdges={["top", "bottom"]}
       contentContainerStyle={themed($container)}
     >
+      <BrandHeader />
       <Text tx="signInScreen:title" preset="heading" style={themed($title)} />
       <Text tx="signInScreen:subtitle" style={themed($subtitle)} />
 

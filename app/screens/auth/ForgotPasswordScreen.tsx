@@ -2,6 +2,7 @@ import { FC, useState } from "react"
 import { Keyboard, Pressable, TextStyle, View, ViewStyle } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 
+import { BrandHeader } from "@/components/BrandHeader"
 import { Button } from "@/components/Button"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -61,6 +62,7 @@ export const ForgotPasswordScreen: FC<ForgotPasswordScreenProps> = ({ navigation
         <Text tx="forgotPasswordScreen:backToSignIn" style={themed($backButtonText)} />
       </Pressable>
 
+      <BrandHeader />
       <View style={themed($header)}>
         <Text tx="forgotPasswordScreen:title" preset="heading" style={themed($title)} />
         <Text tx="forgotPasswordScreen:subtitle" style={themed($subtitle)} />
