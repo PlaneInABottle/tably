@@ -95,15 +95,17 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
 
       <View style={themed($previewCard)}>
         <Text text={formatActivityLabel(activity)} size="xs" preset="bold" style={themed($muted)} />
-        <Text text={title.trim() || `${formatActivityLabel(activity)} table`} preset="heading" />
+        <Text
+          text={title.trim() || `${formatActivityLabel(activity)} table`}
+          preset="subheading"
+          numberOfLines={1}
+        />
         <Text
           text={`${day === "today" ? "Today" : "Tomorrow"} ${time} · ${areaLabel || "Nearby"}`}
+          size="sm"
+          numberOfLines={1}
         />
-        <View style={themed($previewMeta)}>
-          <Text text={vibe} size="xs" preset="bold" />
-          <Text text={`${maxSeats} seats`} size="xs" preset="bold" />
-          <Text text="Intro + confirmation required" size="xs" preset="bold" />
-        </View>
+        <Text text={`${vibe} · ${maxSeats} seats · Intro required`} size="xs" preset="bold" />
       </View>
 
       <View style={themed($section)}>
@@ -112,6 +114,9 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
           {ACTIVITY_TYPES.map((item) => (
             <Pressable
               key={item}
+              accessibilityRole="button"
+              accessibilityState={{ selected: activity === item }}
+              accessibilityLabel={`${formatActivityLabel(item)} activity`}
               onPress={() => {
                 setActivity(item)
                 setTitle(`${formatActivityLabel(item)} table`)
@@ -145,6 +150,8 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
           {(["today", "tomorrow"] as const).map((item) => (
             <Pressable
               key={item}
+              accessibilityRole="button"
+              accessibilityState={{ selected: day === item }}
               onPress={() => setDay(item)}
               style={themed([$chip, day === item && $chipActive])}
             >
@@ -159,6 +166,9 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
           {TABLE_TIME_OPTIONS.map((item) => (
             <Pressable
               key={item}
+              accessibilityRole="button"
+              accessibilityState={{ selected: time === item }}
+              accessibilityLabel={`${item} start time`}
               onPress={() => setTime(item)}
               style={themed([$chip, time === item && $chipActive])}
             >
@@ -179,6 +189,9 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
           {VIBES.map((item) => (
             <Pressable
               key={item}
+              accessibilityRole="button"
+              accessibilityState={{ selected: vibe === item }}
+              accessibilityLabel={`${item} vibe`}
               onPress={() => setVibe(item)}
               style={themed([$chip, vibe === item && $chipActive])}
             >
@@ -193,6 +206,9 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
           {[3, 4, 5, 6].map((item) => (
             <Pressable
               key={item}
+              accessibilityRole="button"
+              accessibilityState={{ selected: maxSeats === item }}
+              accessibilityLabel={`${item} seats`}
               onPress={() => setMaxSeats(item)}
               style={themed([$chip, maxSeats === item && $chipActive])}
             >
@@ -243,14 +259,8 @@ const $previewCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderColor: colors.separator,
   borderRadius: 8,
   borderWidth: 1,
-  gap: spacing.xs,
-  padding: spacing.lg,
-})
-
-const $previewMeta: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  flexDirection: "row",
-  flexWrap: "wrap",
-  gap: spacing.sm,
+  gap: spacing.xxs,
+  padding: spacing.md,
 })
 
 const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -265,7 +275,7 @@ const $chips: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 
 const $chip: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderColor: colors.separator,
-  borderRadius: 999,
+  borderRadius: 8,
   borderWidth: 1,
   paddingHorizontal: spacing.md,
   paddingVertical: spacing.xs,

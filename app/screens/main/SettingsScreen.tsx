@@ -1,5 +1,6 @@
 import { FC, useEffect, useState } from "react"
 import { Alert, Linking, Pressable, TextStyle, View, ViewStyle } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 
 import { Button } from "@/components/Button"
@@ -42,8 +43,13 @@ const SUPPORT_LINKS = {
 } as const
 
 export const SettingsScreen: FC<SettingsScreenProps> = () => {
-  const navigation = useNavigation<AppStackScreenProps<"Main">["navigation"]>()
-  const { themed, themeContext, setThemeContextOverride } = useAppTheme()
+  const navigation = useNavigation<AppStackScreenProps<"Settings">["navigation"]>()
+  const {
+    themed,
+    theme: { colors },
+    themeContext,
+    setThemeContextOverride,
+  } = useAppTheme()
   const { signOut } = useAuth()
   const [selectedThemeMode, setSelectedThemeMode] = useState<ThemeMode>(themeContext)
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
@@ -211,31 +217,76 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
 
     return (
       <Pressable
-        accessibilityRole="button"
+        accessibilityRole="tab"
         accessibilityState={{ selected }}
         accessibilityLabel={`Theme ${mode}`}
         testID={`settings-theme-${mode}`}
         onPress={() => setThemeMode(mode)}
-        style={themed([$row, selected && $selectedRow])}
+        style={themed([$themeSegment, selected && $themeSegmentSelected])}
       >
-        <Text tx={labelTx} weight={selected ? "bold" : "normal"} />
-        {selected ? <Text text="✓" style={themed($checkmark)} /> : null}
+        <Text
+          tx={labelTx}
+          size="sm"
+          weight={selected ? "bold" : "normal"}
+          style={themed(selected ? $themeTextSelected : $body)}
+        />
+      </Pressable>
+    )
+  }
+
+  function renderNavigationRow({
+    label,
+    icon,
+    testID,
+    onPress,
+  }: {
+    label: string
+    icon: keyof typeof Ionicons.glyphMap
+    testID: string
+    onPress: () => void
+  }) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        testID={testID}
+        onPress={onPress}
+        style={themed($navigationRow)}
+      >
+        <View style={themed($navigationIcon)}>
+          <Ionicons name={icon} size={19} color={colors.tint} />
+        </View>
+        <Text text={label} style={themed($navigationLabel)} />
+        <Ionicons name="chevron-forward" size={18} color={colors.textDim} />
       </Pressable>
     )
   }
 
   return (
     <Screen preset="auto" safeAreaEdges={["top"]} contentContainerStyle={themed($container)}>
-      <Text tx="settingsScreen:title" preset="heading" style={themed($title)} />
+      <View style={themed($header)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to profile"
+          testID="settings-back-button"
+          onPress={() => navigation.goBack()}
+          style={themed($backButton)}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </Pressable>
+        <Text tx="settingsScreen:title" preset="heading" style={themed($headerTitle)} />
+      </View>
       <View style={themed($section)}>
         <Text
           tx="settingsScreen:appearanceSection"
           preset="subheading"
           style={themed($sectionTitle)}
         />
-        {renderThemeButton("system", "settingsScreen:themeSystem")}
-        {renderThemeButton("light", "settingsScreen:themeLight")}
-        {renderThemeButton("dark", "settingsScreen:themeDark")}
+        <View accessibilityRole="tablist" style={themed($themeControl)}>
+          {renderThemeButton("system", "settingsScreen:themeSystem")}
+          {renderThemeButton("light", "settingsScreen:themeLight")}
+          {renderThemeButton("dark", "settingsScreen:themeDark")}
+        </View>
       </View>
       <View style={themed($section)}>
         <Text
@@ -243,12 +294,14 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
           preset="subheading"
           style={themed($sectionTitle)}
         />
-        <Button
-          tx="settingsScreen:changePassword"
-          accessibilityLabel="Change password"
-          testID="settings-change-password-button"
-          onPress={() => navigation.getParent()?.navigate("ChangePassword")}
-        />
+        <View style={themed($group)}>
+          {renderNavigationRow({
+            label: translate("settingsScreen:changePassword"),
+            icon: "key-outline",
+            testID: "settings-change-password-button",
+            onPress: () => navigation.navigate("ChangePassword"),
+          })}
+        </View>
       </View>
       <View style={themed($section)}>
         <Text text="Notifications" preset="subheading" style={themed($sectionTitle)} />
@@ -257,45 +310,60 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
           size="sm"
           style={themed($body)}
         />
-        <Button
-          text="Enable notifications"
-          testID="settings-enable-notifications-button"
-          onPress={() => void enableNotifications()}
-        />
+        <View style={themed($group)}>
+          {renderNavigationRow({
+            label: "Enable notifications",
+            icon: "notifications-outline",
+            testID: "settings-enable-notifications-button",
+            onPress: () => void enableNotifications(),
+          })}
+        </View>
         {!!notificationMessage ? <InlineNotice variant="info" text={notificationMessage} /> : null}
         {notificationPreferences ? (
-          <>
+          <View style={themed($switchGroup)}>
             <Switch
               label="Seat held reminders"
+              labelPosition="left"
+              containerStyle={themed($switchRow)}
               value={notificationPreferences.seatHeldIntro}
               onValueChange={(value) => toggleNotificationPreference("seatHeldIntro", value)}
             />
             <Switch
               label="Confirm attendance reminders"
+              labelPosition="left"
+              containerStyle={themed($switchRow)}
               value={notificationPreferences.seatConfirmDue}
               onValueChange={(value) => toggleNotificationPreference("seatConfirmDue", value)}
             />
             <Switch
               label="Confirmed table updates"
+              labelPosition="left"
+              containerStyle={themed($switchRow)}
               value={notificationPreferences.tableConfirmed}
               onValueChange={(value) => toggleNotificationPreference("tableConfirmed", value)}
             />
             <Switch
               label="Waitlist promotions"
+              labelPosition="left"
+              containerStyle={themed($switchRow)}
               value={notificationPreferences.waitlistPromoted}
               onValueChange={(value) => toggleNotificationPreference("waitlistPromoted", value)}
             />
             <Switch
               label="Chat messages"
+              labelPosition="left"
+              containerStyle={themed($switchRow)}
               value={notificationPreferences.tableMessage}
               onValueChange={(value) => toggleNotificationPreference("tableMessage", value)}
             />
             <Switch
               label="Starting soon"
+              labelPosition="left"
+              containerStyle={themed($switchRow)}
               value={notificationPreferences.tableStartingSoon}
               onValueChange={(value) => toggleNotificationPreference("tableStartingSoon", value)}
             />
-          </>
+          </View>
         ) : (
           <Text text="Loading notification preferences..." size="sm" style={themed($body)} />
         )}
@@ -306,31 +374,33 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
           preset="subheading"
           style={themed($sectionTitle)}
         />
-        <Button
-          tx="settingsScreen:privacy"
-          accessibilityLabel="Privacy policy"
-          testID="settings-privacy-button"
-          onPress={() => openSupportLink(SUPPORT_LINKS.privacy)}
-        />
-        <Button
-          tx="settingsScreen:terms"
-          accessibilityLabel="Terms"
-          testID="settings-terms-button"
-          onPress={() => openSupportLink(SUPPORT_LINKS.terms)}
-        />
-        <Button
-          tx="settingsScreen:accountDeletionWeb"
-          accessibilityLabel="Account deletion web resource"
-          testID="settings-account-deletion-web-button"
-          onPress={() => openSupportLink(SUPPORT_LINKS.accountDeletion)}
-        />
+        <View style={themed($group)}>
+          {renderNavigationRow({
+            label: translate("settingsScreen:privacy"),
+            icon: "shield-checkmark-outline",
+            testID: "settings-privacy-button",
+            onPress: () => void openSupportLink(SUPPORT_LINKS.privacy),
+          })}
+          {renderNavigationRow({
+            label: translate("settingsScreen:terms"),
+            icon: "document-text-outline",
+            testID: "settings-terms-button",
+            onPress: () => void openSupportLink(SUPPORT_LINKS.terms),
+          })}
+          {renderNavigationRow({
+            label: translate("settingsScreen:accountDeletionWeb"),
+            icon: "globe-outline",
+            testID: "settings-account-deletion-web-button",
+            onPress: () => void openSupportLink(SUPPORT_LINKS.accountDeletion),
+          })}
+          {renderNavigationRow({
+            label: translate("settingsScreen:contact"),
+            icon: "mail-outline",
+            testID: "settings-contact-button",
+            onPress: () => void openSupportLink(SUPPORT_LINKS.contact),
+          })}
+        </View>
         <Text tx="settingsScreen:about" style={themed($body)} />
-        <Button
-          tx="settingsScreen:contact"
-          accessibilityLabel="Contact support"
-          testID="settings-contact-button"
-          onPress={() => openSupportLink(SUPPORT_LINKS.contact)}
-        />
       </View>
       <View style={themed($section)}>
         <Text tx="settingsScreen:safetySection" preset="subheading" style={themed($sectionTitle)} />
@@ -394,20 +464,31 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
 
 const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingHorizontal: spacing.lg,
-  paddingVertical: spacing.xxl,
+  paddingVertical: spacing.lg,
 })
 
-const $title: ThemedStyle<TextStyle> = ({ spacing }) => ({
+const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  alignItems: "center",
+  flexDirection: "row",
   marginBottom: spacing.lg,
 })
 
-const $section: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  borderColor: colors.separator,
-  borderRadius: 12,
-  borderWidth: 1,
+const $backButton: ThemedStyle<ViewStyle> = () => ({
+  alignItems: "center",
+  height: 44,
+  justifyContent: "center",
+  width: 44,
+})
+
+const $headerTitle: ThemedStyle<TextStyle> = () => ({
+  flex: 1,
+  marginRight: 44,
+  textAlign: "center",
+})
+
+const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   gap: spacing.sm,
   marginBottom: spacing.lg,
-  padding: spacing.md,
 })
 
 const $sectionTitle: ThemedStyle<TextStyle> = ({ spacing }) => ({
@@ -426,13 +507,76 @@ const $row: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   paddingVertical: spacing.sm,
 })
 
-const $selectedRow: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  borderColor: colors.tint,
-  backgroundColor: colors.palette.neutral200,
+const $themeControl: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.palette.neutral300,
+  borderRadius: 8,
+  flexDirection: "row",
+  padding: 3,
 })
 
-const $checkmark: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.tint,
+const $themeSegment: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  alignItems: "center",
+  borderRadius: 6,
+  flex: 1,
+  justifyContent: "center",
+  minHeight: 40,
+  paddingHorizontal: spacing.xs,
+})
+
+const $themeSegmentSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.palette.neutral100,
+})
+
+const $themeTextSelected: ThemedStyle<TextStyle> = ({ colors }) => ({
+  color: colors.text,
+})
+
+const $group: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.separator,
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  gap: 1,
+  overflow: "hidden",
+})
+
+const $navigationRow: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  alignItems: "center",
+  backgroundColor: colors.palette.neutral100,
+  flexDirection: "row",
+  gap: spacing.sm,
+  minHeight: 52,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.sm,
+})
+
+const $navigationIcon: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  alignItems: "center",
+  backgroundColor: colors.palette.primary100,
+  borderRadius: 8,
+  height: 32,
+  justifyContent: "center",
+  width: 32,
+})
+
+const $navigationLabel: ThemedStyle<TextStyle> = () => ({
+  flex: 1,
+})
+
+const $switchGroup: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.separator,
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  gap: 1,
+  overflow: "hidden",
+})
+
+const $switchRow: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral100,
+  minHeight: 52,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.sm,
 })
 
 const $body: ThemedStyle<TextStyle> = ({ colors }) => ({

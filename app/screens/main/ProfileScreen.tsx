@@ -34,6 +34,9 @@ export const ProfileScreen: FC = () => {
 
   const displayName = displayNameOverride ?? profile?.display_name ?? ""
   const summary = summaryOverride ?? profile?.summary ?? ""
+  const hasProfileChanges =
+    displayName.trim() !== (profile?.display_name ?? "") ||
+    summary.trim() !== (profile?.summary ?? "")
 
   useEffect(() => {
     let isActive = true
@@ -189,7 +192,9 @@ export const ProfileScreen: FC = () => {
 
       <Button
         text={isSaving ? "Saving..." : "Save profile"}
-        disabled={isSaving}
+        accessibilityLabel="Save profile"
+        testID="profile-save-button"
+        disabled={isSaving || isUploadingAvatar || !hasProfileChanges}
         preset="reversed"
         onPress={() => void saveProfile()}
       />

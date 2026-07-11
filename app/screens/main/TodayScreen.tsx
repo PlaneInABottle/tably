@@ -262,25 +262,47 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
           onPress={() => navigation.navigate("CreateTable")}
           style={themed($iconButton)}
         >
-          <Ionicons name="add" size={24} color={colors.text} />
+          <Ionicons name="add" size={24} color={colors.palette.neutral100} />
         </Pressable>
       </View>
 
       <View style={themed($segmented)}>
-        <Button
-          text="List"
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: mode === "list" }}
+          accessibilityLabel="List view"
           testID="today-list-mode-button"
-          preset={mode === "list" ? "filled" : "default"}
           onPress={() => setMode("list")}
-          style={themed($segmentButton)}
-        />
-        <Button
-          text="Map"
+          style={themed([$segment, mode === "list" && $segmentSelected])}
+        >
+          <Ionicons name="list" size={18} color={mode === "list" ? colors.text : colors.textDim} />
+          <Text
+            text="List"
+            size="sm"
+            preset="bold"
+            style={themed(mode === "list" ? $segmentTextSelected : $segmentText)}
+          />
+        </Pressable>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{ selected: mode === "map" }}
+          accessibilityLabel="Map view"
           testID="today-map-mode-button"
-          preset={mode === "map" ? "filled" : "default"}
           onPress={() => setMode("map")}
-          style={themed($segmentButton)}
-        />
+          style={themed([$segment, mode === "map" && $segmentSelected])}
+        >
+          <Ionicons
+            name="map-outline"
+            size={18}
+            color={mode === "map" ? colors.text : colors.textDim}
+          />
+          <Text
+            text="Map"
+            size="sm"
+            preset="bold"
+            style={themed(mode === "map" ? $segmentTextSelected : $segmentText)}
+          />
+        </Pressable>
       </View>
 
       {!!error ? <InlineNotice variant="error" text={error} /> : null}
@@ -294,7 +316,11 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
             text="Start a small plan for today or tomorrow and let Tably host the momentum."
             style={themed($mutedText)}
           />
-          <Button text="Create a table" onPress={() => navigation.navigate("CreateTable")} />
+          <Button
+            text="Create a table"
+            preset="reversed"
+            onPress={() => navigation.navigate("CreateTable")}
+          />
         </View>
       ) : null}
       {canShowContent && mode === "list" ? (
@@ -340,7 +366,7 @@ const $mutedText: ThemedStyle<TextStyle> = ({ colors }) => ({
 
 const $iconButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   alignItems: "center",
-  backgroundColor: colors.palette.neutral200,
+  backgroundColor: colors.tint,
   borderRadius: 22,
   height: 44,
   justifyContent: "center",
@@ -348,14 +374,31 @@ const $iconButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   marginLeft: spacing.sm,
 })
 
-const $segmented: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+const $segmented: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.palette.neutral300,
+  borderRadius: 8,
   flexDirection: "row",
-  gap: spacing.sm,
+  padding: 3,
 })
 
-const $segmentButton: ThemedStyle<ViewStyle> = () => ({
+const $segment: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  alignItems: "center",
+  borderRadius: 6,
   flex: 1,
+  flexDirection: "row",
+  gap: spacing.xs,
+  justifyContent: "center",
+  minHeight: 40,
+  paddingHorizontal: spacing.sm,
 })
+
+const $segmentSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.palette.neutral100,
+})
+
+const $segmentText: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.textDim })
+
+const $segmentTextSelected: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text })
 
 const $tableCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.palette.neutral100,
