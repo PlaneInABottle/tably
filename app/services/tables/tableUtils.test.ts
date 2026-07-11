@@ -1,4 +1,5 @@
 import {
+  buildTableStartsAt,
   formatActivityLabel,
   formatCountdown,
   formatPlanTime,
@@ -6,6 +7,7 @@ import {
   getChatPromptChips,
   getMemberStatusLabel,
   getMomentumMessage,
+  getInitialTableSchedule,
   getSeatsLeft,
   getTableStatusLabel,
   isTodayOrTomorrow,
@@ -38,6 +40,15 @@ describe("tableUtils", () => {
     expect(isTodayOrTomorrow("2026-06-24T18:00:00.000Z", now)).toBe(true)
     expect(isTodayOrTomorrow("2026-06-25T18:00:00.000Z", now)).toBe(true)
     expect(isTodayOrTomorrow("2026-06-26T00:00:00.000Z", now)).toBe(false)
+  })
+
+  it("chooses a future default schedule, rolling to tomorrow when needed", () => {
+    const afternoon = new Date(2026, 6, 11, 18, 0)
+    const lateEvening = new Date(2026, 6, 11, 22, 0)
+
+    expect(getInitialTableSchedule(afternoon)).toEqual({ day: "today", time: "18:30" })
+    expect(getInitialTableSchedule(lateEvening)).toEqual({ day: "tomorrow", time: "18:30" })
+    expect(new Date(buildTableStartsAt("tomorrow", "18:30", lateEvening)).getDate()).toBe(12)
   })
 
   it("formats plan times without crashing on valid dates", () => {

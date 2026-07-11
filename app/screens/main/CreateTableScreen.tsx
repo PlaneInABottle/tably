@@ -9,7 +9,13 @@ import { Text } from "@/components/Text"
 import { TextField } from "@/components/TextField"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import { createSocialTable } from "@/services/tables/tableService"
-import { formatActivityLabel } from "@/services/tables/tableUtils"
+import {
+  buildTableStartsAt,
+  formatActivityLabel,
+  getInitialTableSchedule,
+  TABLE_TIME_OPTIONS,
+  type TableDay,
+} from "@/services/tables/tableUtils"
 import { ACTIVITY_TYPES, type ActivityType } from "@/services/tables/types"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
@@ -18,21 +24,13 @@ interface CreateTableScreenProps extends MainTabScreenProps<"CreateTable"> {}
 
 const DEFAULT_COORDINATE = { latitude: 41.015137, longitude: 28.97953 }
 const VIBES = ["Chill", "Talkative", "Beginner friendly", "Focused", "Spontaneous"]
-const TIMES = ["18:30", "19:30", "20:30", "21:30"]
-
-function buildStartsAt(day: "today" | "tomorrow", time: string): string {
-  const [hours, minutes] = time.split(":").map(Number)
-  const date = new Date()
-  if (day === "tomorrow") date.setDate(date.getDate() + 1)
-  date.setHours(hours, minutes, 0, 0)
-  return date.toISOString()
-}
 
 export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) => {
   const { themed } = useAppTheme()
+  const [initialSchedule] = useState(getInitialTableSchedule)
   const [activity, setActivity] = useState<ActivityType>("coffee")
-  const [day, setDay] = useState<"today" | "tomorrow">("today")
-  const [time, setTime] = useState("19:30")
+  const [day, setDay] = useState<TableDay>(initialSchedule.day)
+  const [time, setTime] = useState(initialSchedule.time)
   const [title, setTitle] = useState("Coffee table")
   const [areaLabel, setAreaLabel] = useState("Kadikoy")
   const [note, setNote] = useState("")
@@ -43,7 +41,7 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
   const [isSaving, setIsSaving] = useState(false)
   const [locationMessage, setLocationMessage] = useState("")
 
-  const startsAt = useMemo(() => buildStartsAt(day, time), [day, time])
+  const startsAt = useMemo(() => buildTableStartsAt(day, time), [day, time])
 
   async function applyCurrentLocation() {
     setError("")
@@ -158,7 +156,7 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
               />
             </Pressable>
           ))}
-          {TIMES.map((item) => (
+          {TABLE_TIME_OPTIONS.map((item) => (
             <Pressable
               key={item}
               onPress={() => setTime(item)}

@@ -75,9 +75,12 @@ Deno.serve(async (req) => {
     if (removeError) return json({ error: `Avatar cleanup failed: ${removeError.message}` }, 500)
   }
 
+  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id)
+  if (deleteError) return json({ error: deleteError.message }, 500)
+
   await admin.from("moderation_reports").insert({
-    reporter_id: user.id,
-    reported_user_id: user.id,
+    reporter_id: null,
+    reported_user_id: null,
     target_type: "profile",
     target_id: user.id,
     reason: "account_deletion",
@@ -88,9 +91,6 @@ Deno.serve(async (req) => {
       requested_at: new Date().toISOString(),
     },
   })
-
-  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id)
-  if (deleteError) return json({ error: deleteError.message }, 500)
 
   return json({ ok: true })
 })

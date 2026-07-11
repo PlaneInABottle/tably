@@ -100,7 +100,9 @@ function getProjectId(): string | undefined {
   return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
 }
 
-export async function registerPushToken(): Promise<ServiceResult<{ token: string | null }>> {
+export async function registerPushToken(options?: {
+  requestPermission?: boolean
+}): Promise<ServiceResult<{ token: string | null }>> {
   try {
     await setupAndroidChannels()
     const native = await getNativeNotifications()
@@ -111,7 +113,9 @@ export async function registerPushToken(): Promise<ServiceResult<{ token: string
     const finalPermission =
       permission.status === "granted"
         ? permission
-        : await native.Notifications.requestPermissionsAsync()
+        : options?.requestPermission
+          ? await native.Notifications.requestPermissionsAsync()
+          : permission
 
     if (finalPermission.status !== "granted") return { ok: true, data: { token: null } }
 

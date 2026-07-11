@@ -32,6 +32,9 @@ env:
 - tapOn:
     text: "Not Now"
     optional: true
+- tapOn:
+    text: "Don’t Allow"
+    optional: true
 - extendedWaitUntil:
     visible: "Today"
     timeout: 30000
@@ -42,13 +45,18 @@ env:
     timeout: 10000
 - tapOn: "Coffee"
 - tapOn: "Tomorrow"
+- scrollUntilVisible:
+    element: "20:30"
+    direction: DOWN
+    timeout: 10000
 - tapOn: "20:30"
 - scrollUntilVisible:
-    element: "Create table"
+    element:
+      id: "create-table-submit-button"
     direction: DOWN
     timeout: 10000
 - tapOn:
-    point: "50%,85%"
+    id: "create-table-submit-button"
 - extendedWaitUntil:
     visible: "Table"
     timeout: 30000
@@ -62,14 +70,17 @@ env:
           visible: "Needs intro"
           timeout: 30000
 - assertVisible: "Needs intro"
-- tapOn: "A short answer is enough."
+- tapOn:
+    id: "table-intro-input"
 - inputText: "Easy conversation and a calm coffee plan."
 - hideKeyboard
-- tapOn: "Save intro"
+- tapOn:
+    id: "table-intro-submit-button"
 - extendedWaitUntil:
     visible: "Needs confirm"
     timeout: 30000
-- tapOn: "Confirm attendance"
+- tapOn:
+    id: "table-confirm-button"
 - extendedWaitUntil:
     visible: "You are confirmed"
     timeout: 30000
@@ -77,7 +88,8 @@ env:
 - extendedWaitUntil:
     visible: "Can we confirm the exact venue?"
     timeout: 10000
-- tapOn: "Send"
+- tapOn:
+    id: "table-message-send-button"
 - extendedWaitUntil:
     visible: "Can we confirm the exact venue?"
     timeout: 30000
@@ -85,7 +97,8 @@ env:
     direction: DOWN
 - swipe:
     direction: DOWN
-- tapOn: "Back"
+- tapOn:
+    id: "table-detail-back-button"
 - waitForAnimationToEnd
 - tapOn:
     id: "tab-chats"
@@ -97,11 +110,14 @@ env:
 - extendedWaitUntil:
     visible: "Today"
     timeout: 30000
-- tapOn: "List"
+- tapOn:
+    id: "today-list-mode-button"
 - assertVisible: "Open Coffee table"
-- tapOn: "Map"
+- tapOn:
+    id: "today-map-mode-button"
 - extendedWaitUntil:
-    visible: "Search this area"
+    visible:
+      id: "today-map-search-button"
     timeout: 30000
-- assertVisible: "Map pin"
+- assertVisible: "Map pin Coffee table"
 - takeScreenshot: "tably-core-table-flow"

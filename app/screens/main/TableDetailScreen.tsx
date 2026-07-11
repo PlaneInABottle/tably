@@ -173,8 +173,28 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
       setError(result.error)
       return
     }
-    setMessage("You left this table.")
-    await load()
+    navigation.goBack()
+  }
+
+  function confirmLeave() {
+    const isCreator = table?.creator.id === user?.id
+    const isWaitlisted = table?.isWaitlisted === true
+    Alert.alert(
+      isCreator ? "Cancel this table?" : isWaitlisted ? "Leave the waitlist?" : "Leave this table?",
+      isCreator
+        ? "The plan will close for everyone and queued reminders will be cancelled."
+        : isWaitlisted
+          ? "You will give up your place in the waitlist."
+          : "Your seat will be released and may be offered to someone on the waitlist.",
+      [
+        { text: "Keep table", style: "cancel" },
+        {
+          text: isCreator ? "Cancel table" : isWaitlisted ? "Leave waitlist" : "Leave table",
+          style: "destructive",
+          onPress: () => void handleLeave(),
+        },
+      ],
+    )
   }
 
   async function handleSend() {
@@ -279,6 +299,7 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
 
   const status = table?.myMemberStatus
   const canChat = status === "pending_confirm" || status === "confirmed"
+  const isCreator = table?.creator.id === user?.id
 
   return (
     <KeyboardAvoidingView
@@ -294,6 +315,7 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back"
+            testID="table-detail-back-button"
             onPress={() => navigation.goBack()}
             style={themed($backButton)}
           >
@@ -348,6 +370,7 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                 />
                 <Button
                   text={isBusy ? "Joining..." : "Join"}
+                  testID="table-join-button"
                   disabled={isBusy}
                   preset="reversed"
                   onPress={() => void handleJoin()}
@@ -371,9 +394,11 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                   onChangeText={setIntroAnswer}
                   placeholder="A short answer is enough."
                   multiline
+                  testID="table-intro-input"
                 />
                 <Button
                   text={isBusy ? "Saving..." : "Save intro"}
+                  testID="table-intro-submit-button"
                   disabled={isBusy}
                   preset="reversed"
                   onPress={() => void handleIntro()}
@@ -390,6 +415,7 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                 />
                 <Button
                   text={isBusy ? "Confirming..." : "Confirm attendance"}
+                  testID="table-confirm-button"
                   disabled={isBusy}
                   preset="reversed"
                   onPress={() => void handleConfirm()}
@@ -426,15 +452,27 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                     onChangeText={setDraft}
                     placeholder="Message the table"
                     containerStyle={themed($composerInput)}
+                    testID="table-message-input"
                   />
                   <Button
                     text="Send"
+                    testID="table-message-send-button"
                     disabled={isBusy || draft.trim().length === 0}
                     onPress={() => void handleSend()}
                   />
                 </View>
-                <Button text="Leave table" onPress={() => void handleLeave()} />
               </View>
+            ) : null}
+
+            {status || table.isWaitlisted ? (
+              <Button
+                text={
+                  isCreator ? "Cancel table" : table.isWaitlisted ? "Leave waitlist" : "Leave table"
+                }
+                testID="table-leave-button"
+                disabled={isBusy}
+                onPress={confirmLeave}
+              />
             ) : null}
 
             <View style={themed($safetySection)}>

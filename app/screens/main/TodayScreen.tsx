@@ -179,6 +179,9 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
               onPress={() => setSelectedTableId(table.id)}
             >
               <View
+                accessible
+                accessibilityLabel={`Map pin ${table.title}`}
+                testID={`table-map-pin-${table.id}`}
                 style={[
                   themed($marker),
                   { backgroundColor: statusColor(table.status, colors) },
@@ -196,6 +199,7 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
         </MapView>
         <Button
           text={isLoading ? "Searching..." : "Search this area"}
+          testID="today-map-search-button"
           onPress={() => void loadTables()}
           disabled={isLoading}
           style={themed($mapSearchButton(!!selectedTable))}
@@ -265,12 +269,14 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
       <View style={themed($segmented)}>
         <Button
           text="List"
+          testID="today-list-mode-button"
           preset={mode === "list" ? "filled" : "default"}
           onPress={() => setMode("list")}
           style={themed($segmentButton)}
         />
         <Button
           text="Map"
+          testID="today-map-mode-button"
           preset={mode === "map" ? "filled" : "default"}
           onPress={() => setMode("map")}
           style={themed($segmentButton)}

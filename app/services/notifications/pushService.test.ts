@@ -31,7 +31,10 @@ jest.mock("expo-notifications", () => ({
   setNotificationChannelAsync: jest.fn().mockResolvedValue(undefined),
   getPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
   requestPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
-  getExpoPushTokenAsync: jest.fn().mockResolvedValue({ data: "ExponentPushToken[test]" }),
+  getExpoPushTokenAsync: jest.fn().mockResolvedValue({
+    type: "expo",
+    data: "ExponentPushToken[test]",
+  }),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   getLastNotificationResponseAsync: jest.fn().mockResolvedValue(null),
 }))
@@ -39,6 +42,13 @@ jest.mock("expo-notifications", () => ({
 describe("pushService", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ status: "granted" } as never)
+    jest
+      .mocked(Notifications.requestPermissionsAsync)
+      .mockResolvedValue({ status: "granted" } as never)
+    jest
+      .mocked(Notifications.getExpoPushTokenAsync)
+      .mockResolvedValue({ type: "expo", data: "ExponentPushToken[test]" })
   })
 
   it("registers an Expo push token through RPC", async () => {
@@ -69,6 +79,31 @@ describe("pushService", () => {
     })
 
     expect(supabase.rpc).not.toHaveBeenCalled()
+  })
+
+  it("does not interrupt onboarding to request notification permission", async () => {
+    jest
+      .mocked(Notifications.getPermissionsAsync)
+      .mockResolvedValue({ status: "undetermined" } as never)
+
+    await expect(registerPushToken()).resolves.toEqual({ ok: true, data: { token: null } })
+    expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled()
+    expect(supabase.rpc).not.toHaveBeenCalled()
+  })
+
+  it("requests notification permission only when explicitly enabled", async () => {
+    jest
+      .mocked(Notifications.getPermissionsAsync)
+      .mockResolvedValue({ status: "undetermined" } as never)
+    jest
+      .mocked(supabase.rpc)
+      .mockResolvedValue({ data: [{ token: "ExponentPushToken[test]" }], error: null } as never)
+
+    await expect(registerPushToken({ requestPermission: true })).resolves.toEqual({
+      ok: true,
+      data: { token: "ExponentPushToken[test]" },
+    })
+    expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1)
   })
 
   it("normalizes notification preferences from RPC rows", async () => {

@@ -18,6 +18,7 @@ import {
 } from "@/services/moderation/moderationService"
 import {
   getNotificationPreferences,
+  registerPushToken,
   updateNotificationPreferences,
   type NotificationPreferences,
 } from "@/services/notifications/pushService"
@@ -49,6 +50,7 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
   const [notificationPreferences, setNotificationPreferences] =
     useState<NotificationPreferences | null>(null)
   const [error, setError] = useState("")
+  const [notificationMessage, setNotificationMessage] = useState("")
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
   useEffect(() => {
@@ -82,6 +84,22 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
       return
     }
     setNotificationPreferences(result.data)
+  }
+
+  async function enableNotifications() {
+    setError("")
+    setNotificationMessage("")
+    const result = await registerPushToken({ requestPermission: true })
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+
+    setNotificationMessage(
+      result.data.token
+        ? "Notifications are enabled on this device."
+        : "Notification permission was not granted.",
+    )
   }
 
   function setThemeMode(mode: ThemeMode) {
@@ -239,6 +257,12 @@ export const SettingsScreen: FC<SettingsScreenProps> = () => {
           size="sm"
           style={themed($body)}
         />
+        <Button
+          text="Enable notifications"
+          testID="settings-enable-notifications-button"
+          onPress={() => void enableNotifications()}
+        />
+        {!!notificationMessage ? <InlineNotice variant="info" text={notificationMessage} /> : null}
         {notificationPreferences ? (
           <>
             <Switch

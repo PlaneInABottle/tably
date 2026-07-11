@@ -42,3 +42,17 @@ appId: ${MAESTRO_APP_ID}
     commands:
       - tapOn: "Continue"
       - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "gearshape.fill"
+    commands:
+      - tapOn:
+          id: "gearshape.fill"
+      - extendedWaitUntil:
+          visible: "Tools button"
+          timeout: 5000
+      - tapOn: "Tools button"
+      - tapOn:
+          id: "xmark"
+      - waitForAnimationToEnd

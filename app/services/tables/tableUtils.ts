@@ -5,6 +5,32 @@ export type ChatPromptChip = {
   message: string
 }
 
+export const TABLE_TIME_OPTIONS = ["18:30", "19:30", "20:30", "21:30"] as const
+
+export type TableDay = "today" | "tomorrow"
+
+export function buildTableStartsAt(day: TableDay, time: string, now = new Date()): string {
+  const [hours, minutes] = time.split(":").map(Number)
+  const date = new Date(now)
+  if (day === "tomorrow") date.setDate(date.getDate() + 1)
+  date.setHours(hours, minutes, 0, 0)
+  return date.toISOString()
+}
+
+export function getInitialTableSchedule(now = new Date()): {
+  day: TableDay
+  time: (typeof TABLE_TIME_OPTIONS)[number]
+} {
+  const minimumStart = now.getTime() + 15 * 60 * 1000
+  const todayTime = TABLE_TIME_OPTIONS.find(
+    (time) => new Date(buildTableStartsAt("today", time, now)).getTime() >= minimumStart,
+  )
+
+  return todayTime
+    ? { day: "today", time: todayTime }
+    : { day: "tomorrow", time: TABLE_TIME_OPTIONS[0] }
+}
+
 export function formatActivityLabel(activity: string): string {
   const labels: Record<string, string> = {
     coffee: "Coffee",
