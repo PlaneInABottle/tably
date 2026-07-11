@@ -1,6 +1,7 @@
-import { FC, useMemo, useState } from "react"
+import { FC, useMemo, useRef, useState } from "react"
 import { Pressable, TextStyle, View, ViewStyle } from "react-native"
 import * as Location from "expo-location"
+import MapView, { Marker, type MapPressEvent } from "react-native-maps"
 
 import { Button } from "@/components/Button"
 import { InlineNotice } from "@/components/InlineNotice"
@@ -13,6 +14,7 @@ import {
   buildTableStartsAt,
   formatActivityLabel,
   getInitialTableSchedule,
+  isTableStartValid,
   TABLE_TIME_OPTIONS,
   type TableDay,
 } from "@/services/tables/tableUtils"
@@ -22,11 +24,12 @@ import type { ThemedStyle } from "@/theme/types"
 
 interface CreateTableScreenProps extends MainTabScreenProps<"CreateTable"> {}
 
-const DEFAULT_COORDINATE = { latitude: 41.015137, longitude: 28.97953 }
+const DEFAULT_COORDINATE = { latitude: 40.9917, longitude: 29.0277 }
 const VIBES = ["Chill", "Talkative", "Beginner friendly", "Focused", "Spontaneous"]
 
 export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) => {
   const { themed } = useAppTheme()
+  const mapRef = useRef<MapView>(null)
   const [initialSchedule] = useState(getInitialTableSchedule)
   const [activity, setActivity] = useState<ActivityType>("coffee")
   const [day, setDay] = useState<TableDay>(initialSchedule.day)
@@ -36,12 +39,31 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
   const [note, setNote] = useState("")
   const [vibe, setVibe] = useState("Chill")
   const [maxSeats, setMaxSeats] = useState(5)
+  const [introPrompt, setIntroPrompt] = useState("What would make this plan enjoyable for you?")
   const [coordinate, setCoordinate] = useState(DEFAULT_COORDINATE)
   const [error, setError] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [locationMessage, setLocationMessage] = useState("")
 
   const startsAt = useMemo(() => buildTableStartsAt(day, time), [day, time])
+  const hasAvailableTodayTime = TABLE_TIME_OPTIONS.some((option) =>
+    isTableStartValid(buildTableStartsAt("today", option)),
+  )
+
+  function selectDay(nextDay: TableDay) {
+    setDay(nextDay)
+    if (nextDay !== "today" || isTableStartValid(buildTableStartsAt(nextDay, time))) return
+
+    const nextTime = TABLE_TIME_OPTIONS.find((option) =>
+      isTableStartValid(buildTableStartsAt(nextDay, option)),
+    )
+    if (nextTime) setTime(nextTime)
+  }
+
+  function selectMeetingPoint(event: MapPressEvent) {
+    setCoordinate(event.nativeEvent.coordinate)
+    setLocationMessage("Meeting point updated.")
+  }
 
   async function applyCurrentLocation() {
     setError("")
@@ -57,23 +79,45 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
       latitude: current.coords.latitude,
       longitude: current.coords.longitude,
     })
+    mapRef.current?.animateToRegion(
+      {
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+        latitudeDelta: 0.025,
+        longitudeDelta: 0.025,
+      },
+      350,
+    )
     setLocationMessage("Using your current location.")
   }
 
   async function save() {
     setError("")
+    if (!title.trim() || !areaLabel.trim()) {
+      setError("Add a title and area before creating this table.")
+      return
+    }
+    if (!isTableStartValid(startsAt)) {
+      setError("Choose a start time at least 15 minutes from now.")
+      return
+    }
+    if (!introPrompt.trim()) {
+      setError("Add an intro question for people joining your table.")
+      return
+    }
+
     setIsSaving(true)
     const result = await createSocialTable({
       activity,
-      title: title.trim() || `${formatActivityLabel(activity)} table`,
+      title: title.trim(),
       note,
       vibe,
-      areaLabel: areaLabel.trim() || "Nearby",
+      areaLabel: areaLabel.trim(),
       startsAt,
       coordinate,
       minSeats: 3,
       maxSeats,
-      introPrompt: "What are you hoping this plan feels like?",
+      introPrompt: introPrompt.trim(),
     })
     setIsSaving(false)
 
@@ -105,7 +149,7 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
           size="sm"
           numberOfLines={1}
         />
-        <Text text={`${vibe} · ${maxSeats} seats · Intro required`} size="xs" preset="bold" />
+        <Text text={`${vibe} · ${maxSeats} seats · Join question`} size="xs" preset="bold" />
       </View>
 
       <View style={themed($section)}>
@@ -145,15 +189,46 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
       </View>
 
       <View style={themed($section)}>
+        <Text text="Meeting point" preset="bold" />
+        <MapView
+          ref={mapRef}
+          initialRegion={{
+            ...DEFAULT_COORDINATE,
+            latitudeDelta: 0.025,
+            longitudeDelta: 0.025,
+          }}
+          onPress={selectMeetingPoint}
+          testID="create-table-location-map"
+          style={themed($locationMap)}
+        >
+          <Marker
+            coordinate={coordinate}
+            draggable
+            onDragEnd={(event) => setCoordinate(event.nativeEvent.coordinate)}
+          />
+        </MapView>
+        <Button text="Use current location" onPress={() => void applyCurrentLocation()} />
+        {!!locationMessage ? <InlineNotice variant="success" text={locationMessage} /> : null}
+      </View>
+
+      <View style={themed($section)}>
         <Text text="When" preset="bold" />
         <View style={themed($chips)}>
           {(["today", "tomorrow"] as const).map((item) => (
             <Pressable
               key={item}
               accessibilityRole="button"
-              accessibilityState={{ selected: day === item }}
-              onPress={() => setDay(item)}
-              style={themed([$chip, day === item && $chipActive])}
+              accessibilityState={{
+                disabled: item === "today" && !hasAvailableTodayTime,
+                selected: day === item,
+              }}
+              disabled={item === "today" && !hasAvailableTodayTime}
+              onPress={() => selectDay(item)}
+              style={themed([
+                $chip,
+                item === "today" && !hasAvailableTodayTime && $chipDisabled,
+                day === item && $chipActive,
+              ])}
             >
               <Text
                 text={item === "today" ? "Today" : "Tomorrow"}
@@ -163,23 +238,27 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
               />
             </Pressable>
           ))}
-          {TABLE_TIME_OPTIONS.map((item) => (
-            <Pressable
-              key={item}
-              accessibilityRole="button"
-              accessibilityState={{ selected: time === item }}
-              accessibilityLabel={`${item} start time`}
-              onPress={() => setTime(item)}
-              style={themed([$chip, time === item && $chipActive])}
-            >
-              <Text
-                text={item}
-                size="xs"
-                preset="bold"
-                style={themed(time === item ? $chipTextActive : $chipText)}
-              />
-            </Pressable>
-          ))}
+          {TABLE_TIME_OPTIONS.map((item) => {
+            const disabled = !isTableStartValid(buildTableStartsAt(day, item))
+            return (
+              <Pressable
+                key={item}
+                accessibilityRole="button"
+                accessibilityState={{ disabled, selected: time === item }}
+                accessibilityLabel={`${item} start time`}
+                disabled={disabled}
+                onPress={() => setTime(item)}
+                style={themed([$chip, disabled && $chipDisabled, time === item && $chipActive])}
+              >
+                <Text
+                  text={item}
+                  size="xs"
+                  preset="bold"
+                  style={themed(time === item ? $chipTextActive : $chipText)}
+                />
+              </Pressable>
+            )
+          })}
         </View>
       </View>
 
@@ -203,7 +282,7 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
               />
             </Pressable>
           ))}
-          {[3, 4, 5, 6].map((item) => (
+          {[3, 4, 5, 6, 7, 8].map((item) => (
             <Pressable
               key={item}
               accessibilityRole="button"
@@ -230,14 +309,19 @@ export const CreateTableScreen: FC<CreateTableScreenProps> = ({ navigation }) =>
         multiline
         placeholder="Example: easy pace, subtitles, casual after-work coffee."
       />
-      <Button text="Use current location" onPress={() => void applyCurrentLocation()} />
-      {!!locationMessage ? <InlineNotice variant="success" text={locationMessage} /> : null}
+      <TextField
+        label="Question for people joining"
+        value={introPrompt}
+        onChangeText={setIntroPrompt}
+        multiline
+        placeholder="What would you like to know before meeting?"
+      />
       {!!error ? <InlineNotice variant="error" text={error} /> : null}
       <Button
         text={isSaving ? "Creating..." : "Create table"}
         accessibilityLabel="Submit table"
         testID="create-table-submit-button"
-        disabled={isSaving}
+        disabled={isSaving || !title.trim() || !areaLabel.trim() || !introPrompt.trim()}
         preset="reversed"
         onPress={() => void save()}
       />
@@ -267,6 +351,12 @@ const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   gap: spacing.sm,
 })
 
+const $locationMap: ThemedStyle<ViewStyle> = () => ({
+  borderRadius: 8,
+  height: 180,
+  overflow: "hidden",
+})
+
 const $chips: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   flexWrap: "wrap",
@@ -285,6 +375,8 @@ const $chipActive: ThemedStyle<ViewStyle> = ({ colors }) => ({
   backgroundColor: colors.tint,
   borderColor: colors.tint,
 })
+
+const $chipDisabled: ThemedStyle<ViewStyle> = () => ({ opacity: 0.4 })
 
 const $chipText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.text,

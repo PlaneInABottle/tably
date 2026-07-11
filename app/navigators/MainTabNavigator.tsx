@@ -17,9 +17,9 @@ type IoniconName = React.ComponentProps<typeof Ionicons>["name"]
 type TabIconRoute = keyof MainTabParamList
 
 const TAB_ICON_NAMES: Record<TabIconRoute, { focused: IoniconName; unfocused: IoniconName }> = {
-  Today: { focused: "flash", unfocused: "flash-outline" },
+  Today: { focused: "map", unfocused: "map-outline" },
   CreateTable: { focused: "add-circle", unfocused: "add-circle-outline" },
-  Chats: { focused: "chatbubbles", unfocused: "chatbubbles-outline" },
+  Chats: { focused: "calendar", unfocused: "calendar-outline" },
   Profile: { focused: "person-circle", unfocused: "person-circle-outline" },
 }
 
@@ -48,6 +48,7 @@ export function MainTabNavigator() {
         name="Today"
         component={TodayScreen}
         options={{
+          title: "Explore",
           tabBarButtonTestID: "tab-today",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons
@@ -85,6 +86,7 @@ export function MainTabNavigator() {
         name="Chats"
         component={TableChatsScreen}
         options={{
+          title: "Plans",
           tabBarButtonTestID: "tab-chats",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons

@@ -10,6 +10,7 @@ import {
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useFocusEffect } from "@react-navigation/native"
+import MapView, { Marker } from "react-native-maps"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Button } from "@/components/Button"
@@ -345,9 +346,28 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
               />
               <Text text={table.note || table.vibe} />
               <View style={themed($statusRow)}>
-                <Text text={getTableStatusLabel(table.status)} size="xs" preset="bold" />
+                <Text
+                  text={table.status === "forming" ? "Forming" : getTableStatusLabel(table.status)}
+                  size="xs"
+                  preset="bold"
+                />
                 <Text text={getMemberStatusLabel(status)} size="xs" preset="bold" />
               </View>
+              <MapView
+                initialRegion={{
+                  ...table.coordinate,
+                  latitudeDelta: 0.018,
+                  longitudeDelta: 0.018,
+                }}
+                pitchEnabled={false}
+                rotateEnabled={false}
+                scrollEnabled={false}
+                testID="table-detail-location-map"
+                zoomEnabled={false}
+                style={themed($detailMap)}
+              >
+                <Marker coordinate={table.coordinate} title={table.areaLabel} />
+              </MapView>
             </View>
 
             <TableMomentumBanner
@@ -475,28 +495,28 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
               />
             ) : null}
 
-            <View style={themed($safetySection)}>
-              <Text text="Safety" preset="subheading" />
-              <Text
-                text="Report the table or block the creator if something feels unsafe."
-                size="sm"
-                style={themed($muted)}
-              />
-              <View style={themed($safetyRow)}>
-                <Button
-                  text="Report table"
-                  onPress={() => openReportReasons("table", table.id)}
-                  style={themed($safetyButton)}
+            {!isCreator ? (
+              <View style={themed($safetySection)}>
+                <Text text="Safety" preset="subheading" />
+                <Text
+                  text="Report the table or block the creator if something feels unsafe."
+                  size="sm"
+                  style={themed($muted)}
                 />
-                {table.creator.id !== user?.id ? (
+                <View style={themed($safetyRow)}>
+                  <Button
+                    text="Report table"
+                    onPress={() => openReportReasons("table", table.id)}
+                    style={themed($safetyButton)}
+                  />
                   <Button
                     text="Block creator"
                     onPress={confirmBlockCreator}
                     style={themed($safetyButton)}
                   />
-                ) : null}
+                </View>
               </View>
-            </View>
+            ) : null}
           </>
         ) : null}
       </Screen>
@@ -539,6 +559,13 @@ const $planCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderRadius: 8,
   gap: spacing.xs,
   padding: spacing.lg,
+})
+
+const $detailMap: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  borderRadius: 8,
+  height: 160,
+  marginTop: spacing.xs,
+  overflow: "hidden",
 })
 
 const $statusRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({

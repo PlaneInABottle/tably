@@ -10,6 +10,7 @@ import {
   getInitialTableSchedule,
   getSeatsLeft,
   getTableStatusLabel,
+  isTableStartValid,
   isTodayOrTomorrow,
 } from "./tableUtils"
 
@@ -47,8 +48,16 @@ describe("tableUtils", () => {
     const lateEvening = new Date(2026, 6, 11, 22, 0)
 
     expect(getInitialTableSchedule(afternoon)).toEqual({ day: "today", time: "18:30" })
-    expect(getInitialTableSchedule(lateEvening)).toEqual({ day: "tomorrow", time: "18:30" })
+    expect(getInitialTableSchedule(lateEvening)).toEqual({ day: "tomorrow", time: "08:00" })
     expect(new Date(buildTableStartsAt("tomorrow", "18:30", lateEvening)).getDate()).toBe(12)
+  })
+
+  it("requires enough lead time without allowing dates beyond tomorrow", () => {
+    const now = new Date(2026, 6, 11, 18, 0)
+
+    expect(isTableStartValid(buildTableStartsAt("today", "18:30", now), now)).toBe(true)
+    expect(isTableStartValid(buildTableStartsAt("today", "18:00", now), now)).toBe(false)
+    expect(isTableStartValid(new Date(2026, 6, 13, 8, 0).toISOString(), now)).toBe(false)
   })
 
   it("formats plan times without crashing on valid dates", () => {

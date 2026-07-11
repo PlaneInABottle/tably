@@ -5,7 +5,16 @@ export type ChatPromptChip = {
   message: string
 }
 
-export const TABLE_TIME_OPTIONS = ["18:30", "19:30", "20:30", "21:30"] as const
+export const TABLE_TIME_OPTIONS = [
+  "08:00",
+  "10:00",
+  "12:30",
+  "15:00",
+  "18:30",
+  "19:30",
+  "20:30",
+  "21:30",
+] as const
 
 export type TableDay = "today" | "tomorrow"
 
@@ -29,6 +38,15 @@ export function getInitialTableSchedule(now = new Date()): {
   return todayTime
     ? { day: "today", time: todayTime }
     : { day: "tomorrow", time: TABLE_TIME_OPTIONS[0] }
+}
+
+export function isTableStartValid(value: string, now = new Date()): boolean {
+  const start = new Date(value)
+  if (Number.isNaN(start.getTime())) return false
+
+  const minimumStart = now.getTime() + 15 * 60 * 1000
+  const startAfterTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2)
+  return start.getTime() >= minimumStart && start < startAfterTomorrow
 }
 
 export function formatActivityLabel(activity: string): string {

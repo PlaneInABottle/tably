@@ -1,5 +1,6 @@
 import { FC, useCallback, useMemo, useRef, useState } from "react"
 import { Pressable, RefreshControl, ScrollView, TextStyle, View, ViewStyle } from "react-native"
+import * as Location from "expo-location"
 import { Ionicons } from "@expo/vector-icons"
 import { useFocusEffect } from "@react-navigation/native"
 import MapView, { Marker, type Region } from "react-native-maps"
@@ -18,7 +19,7 @@ import {
   getMemberStatusLabel,
   getTableStatusLabel,
 } from "@/services/tables/tableUtils"
-import type { SocialTableSummary } from "@/services/tables/types"
+import { ACTIVITY_TYPES, type ActivityType, type SocialTableSummary } from "@/services/tables/types"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 import { calculateBounds } from "@/utils/map/calculateBounds"
@@ -33,6 +34,7 @@ const ISTANBUL_REGION: Region = {
 interface TodayScreenProps extends MainTabScreenProps<"Today"> {}
 
 type ViewMode = "list" | "map"
+type ActivityFilter = "all" | ActivityType
 
 function statusColor(
   status: SocialTableSummary["status"],
@@ -52,12 +54,15 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
     theme: { colors },
   } = useAppTheme()
   const insets = useSafeAreaInsets()
-  const [mode, setMode] = useState<ViewMode>("list")
+  const [mode, setMode] = useState<ViewMode>("map")
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all")
   const [tables, setTables] = useState<SocialTableSummary[]>([])
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isLocating, setIsLocating] = useState(false)
+  const [showsUserLocation, setShowsUserLocation] = useState(false)
 
   const sortedTables = useMemo(
     () =>
@@ -71,12 +76,20 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
     [tables],
   )
 
-  const loadTables = useCallback(async (refreshing = false) => {
+  const visibleTables = useMemo(
+    () =>
+      activityFilter === "all"
+        ? sortedTables
+        : sortedTables.filter((table) => table.activity === activityFilter),
+    [activityFilter, sortedTables],
+  )
+
+  const loadTables = useCallback(async (refreshing = false, region = regionRef.current) => {
     setError("")
     if (refreshing) setIsRefreshing(true)
     else setIsLoading(true)
 
-    const bounds = calculateBounds(regionRef.current)
+    const bounds = calculateBounds(region)
     if (!bounds.ok) {
       setError(bounds.error)
       setIsLoading(false)
@@ -101,9 +114,41 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
     navigation.navigate("TableDetail", { tableId })
   }
 
+  async function centerOnUser() {
+    setError("")
+    setIsLocating(true)
+
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync()
+      if (permission.status !== "granted") {
+        setError("Location permission is needed to show tables around you.")
+        return
+      }
+
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      })
+      const nextRegion: Region = {
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      }
+
+      setShowsUserLocation(true)
+      regionRef.current = nextRegion
+      mapRef.current?.animateToRegion(nextRegion, 350)
+      await loadTables(false, nextRegion)
+    } catch {
+      setError("Your location could not be loaded. Move the map and search this area instead.")
+    } finally {
+      setIsLocating(false)
+    }
+  }
+
   const selectedTable = useMemo(
-    () => tables.find((table) => table.id === selectedTableId) ?? null,
-    [selectedTableId, tables],
+    () => visibleTables.find((table) => table.id === selectedTableId) ?? null,
+    [selectedTableId, visibleTables],
   )
 
   function renderTableCard(table: SocialTableSummary) {
@@ -167,12 +212,13 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
         <MapView
           ref={mapRef}
           initialRegion={ISTANBUL_REGION}
+          showsUserLocation={showsUserLocation}
           onRegionChangeComplete={(nextRegion) => {
             regionRef.current = nextRegion
           }}
           style={themed($map)}
         >
-          {tables.map((table) => (
+          {visibleTables.map((table) => (
             <Marker
               key={table.id}
               coordinate={table.coordinate}
@@ -197,6 +243,37 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
             </Marker>
           ))}
         </MapView>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={isLocating ? "Finding your location" : "Show my location"}
+          testID="today-map-locate-button"
+          disabled={isLocating}
+          onPress={() => void centerOnUser()}
+          style={themed($locateButton)}
+        >
+          <Ionicons
+            name={isLocating ? "hourglass-outline" : "locate"}
+            size={22}
+            color={colors.text}
+          />
+        </Pressable>
+        {!isLoading && visibleTables.length === 0 ? (
+          <View style={themed($mapEmptyBanner)}>
+            <Text
+              text={
+                activityFilter === "all" ? "No tables in this area yet" : "No matching tables here"
+              }
+              size="sm"
+              preset="bold"
+            />
+            <Text text="Move the map or start one nearby." size="xs" style={themed($mutedText)} />
+          </View>
+        ) : null}
+        {isLoading ? (
+          <View style={themed($mapLoadingBanner)}>
+            <Text text="Finding nearby tables..." size="sm" preset="bold" />
+          </View>
+        ) : null}
         <Button
           text={isLoading ? "Searching..." : "Search this area"}
           testID="today-map-search-button"
@@ -245,15 +322,15 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
     )
   }
 
-  const showInitialLoading = isLoading && tables.length === 0
-  const canShowContent = !error && (!isLoading || tables.length > 0)
-
   return (
     <View style={themed($root(insets.top))}>
       <View style={themed($header)}>
         <View>
-          <Text text="Today" preset="heading" />
-          <Text text="Small plans that can actually happen." style={themed($mutedText)} />
+          <Text text="Explore" preset="heading" />
+          <Text
+            text={`${visibleTables.length} nearby ${visibleTables.length === 1 ? "table" : "tables"} today and tomorrow`}
+            style={themed($mutedText)}
+          />
         </View>
         <Pressable
           accessibilityRole="button"
@@ -305,35 +382,72 @@ export const TodayScreen: FC<TodayScreenProps> = ({ navigation }) => {
         </Pressable>
       </View>
 
-      {!!error ? <InlineNotice variant="error" text={error} /> : null}
-      {showInitialLoading ? (
-        <Text text="Finding nearby tables..." style={themed($mutedText)} />
-      ) : null}
-      {canShowContent && tables.length === 0 ? (
-        <View style={themed($emptyCard)}>
-          <Text text="No nearby tables yet" preset="subheading" />
-          <Text
-            text="Start a small plan for today or tomorrow and let Tably host the momentum."
-            style={themed($mutedText)}
-          />
-          <Button
-            text="Create a table"
-            preset="reversed"
-            onPress={() => navigation.navigate("CreateTable")}
-          />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={themed($filterScroll)}
+        contentContainerStyle={themed($filterContent)}
+      >
+        {(["all", ...ACTIVITY_TYPES] as ActivityFilter[]).map((filter) => {
+          const selected = activityFilter === filter
+          const label = filter === "all" ? "All" : formatActivityLabel(filter)
+
+          return (
+            <Pressable
+              key={filter}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              accessibilityLabel={`Filter ${label}`}
+              testID={`today-filter-${filter}`}
+              onPress={() => {
+                setActivityFilter(filter)
+                setSelectedTableId(null)
+              }}
+              style={themed([$filterChip, selected && $filterChipSelected])}
+            >
+              <Text
+                text={label}
+                size="xs"
+                preset="bold"
+                style={themed(selected ? $filterTextSelected : $filterText)}
+              />
+            </Pressable>
+          )
+        })}
+      </ScrollView>
+
+      {!!error ? (
+        <View style={themed($noticeWrap)}>
+          <InlineNotice variant="error" text={error} />
         </View>
       ) : null}
-      {canShowContent && mode === "list" ? (
+      {mode === "list" ? (
         <ScrollView
+          style={themed($list)}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={() => void loadTables(true)} />
           }
           contentContainerStyle={themed($listContent)}
         >
-          {sortedTables.map(renderTableCard)}
+          {isLoading ? <Text text="Finding nearby tables..." style={themed($mutedText)} /> : null}
+          {!isLoading && !error && visibleTables.length === 0 ? (
+            <View style={themed($emptyCard)}>
+              <Text text="No matching tables" preset="subheading" />
+              <Text
+                text="Try another activity or start a table nearby."
+                style={themed($mutedText)}
+              />
+              <Button
+                text="Create a table"
+                preset="reversed"
+                onPress={() => navigation.navigate("CreateTable")}
+              />
+            </View>
+          ) : null}
+          {!error ? visibleTables.map(renderTableCard) : null}
         </ScrollView>
       ) : null}
-      {canShowContent && mode === "map" ? renderMap() : null}
+      {mode === "map" ? renderMap() : null}
     </View>
   )
 }
@@ -343,21 +457,23 @@ const $root =
   ({ colors, spacing }) => ({
     backgroundColor: colors.background,
     flex: 1,
-    gap: spacing.md,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingTop: topInset + spacing.lg,
+    paddingTop: topInset + spacing.md,
   })
+
+const $list: ThemedStyle<ViewStyle> = () => ({ flex: 1 })
 
 const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   gap: spacing.md,
   paddingBottom: spacing.lg,
+  paddingHorizontal: spacing.lg,
 })
 
-const $header: ThemedStyle<ViewStyle> = () => ({
+const $header: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: "center",
   flexDirection: "row",
   justifyContent: "space-between",
+  paddingBottom: spacing.sm,
+  paddingHorizontal: spacing.lg,
 })
 
 const $mutedText: ThemedStyle<TextStyle> = ({ colors }) => ({
@@ -374,10 +490,12 @@ const $iconButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   marginLeft: spacing.sm,
 })
 
-const $segmented: ThemedStyle<ViewStyle> = ({ colors }) => ({
+const $segmented: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.palette.neutral300,
   borderRadius: 8,
   flexDirection: "row",
+  marginBottom: spacing.xs,
+  marginHorizontal: spacing.lg,
   padding: 3,
 })
 
@@ -399,6 +517,42 @@ const $segmentSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
 const $segmentText: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.textDim })
 
 const $segmentTextSelected: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text })
+
+const $filterScroll: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexGrow: 0,
+  marginBottom: spacing.sm,
+})
+
+const $filterContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  gap: spacing.xs,
+  paddingHorizontal: spacing.lg,
+})
+
+const $filterChip: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral100,
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  justifyContent: "center",
+  minHeight: 36,
+  paddingHorizontal: spacing.md,
+})
+
+const $filterChipSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.tint,
+  borderColor: colors.tint,
+})
+
+const $filterText: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text })
+
+const $filterTextSelected: ThemedStyle<TextStyle> = ({ colors }) => ({
+  color: colors.palette.neutral100,
+})
+
+const $noticeWrap: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingBottom: spacing.sm,
+  paddingHorizontal: spacing.lg,
+})
 
 const $tableCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.palette.neutral100,
@@ -449,13 +603,52 @@ const $emptyCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 
 const $mapWrap: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
-  minHeight: 520,
   overflow: "hidden",
-  borderRadius: 8,
 })
 
 const $map: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
+})
+
+const $locateButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  alignItems: "center",
+  backgroundColor: colors.palette.neutral100,
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  height: 44,
+  justifyContent: "center",
+  position: "absolute",
+  right: spacing.md,
+  top: spacing.md,
+  width: 44,
+})
+
+const $mapEmptyBanner: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral100,
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  gap: spacing.xxs,
+  left: spacing.md,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.sm,
+  position: "absolute",
+  right: 72,
+  top: spacing.md,
+})
+
+const $mapLoadingBanner: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral100,
+  borderColor: colors.separator,
+  borderRadius: 8,
+  borderWidth: 1,
+  left: spacing.md,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.sm,
+  position: "absolute",
+  right: 72,
+  top: spacing.md,
 })
 
 const $mapSearchButton =

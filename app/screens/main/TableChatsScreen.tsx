@@ -81,7 +81,11 @@ export const TableChatsScreen: FC<TableChatsScreenProps> = ({ navigation }) => {
           />
         </View>
         <View style={themed($right)}>
-          <Text text={getTableStatusLabel(table.status)} size="xxs" preset="bold" />
+          <Text
+            text={table.status === "forming" ? "Forming" : getTableStatusLabel(table.status)}
+            size="xxs"
+            preset="bold"
+          />
           <Text text={getMemberStatusLabel(table.memberStatus)} size="xxs" style={themed($muted)} />
         </View>
       </Pressable>
@@ -99,8 +103,8 @@ export const TableChatsScreen: FC<TableChatsScreenProps> = ({ navigation }) => {
         ),
       }}
     >
-      <Text text="Chats" preset="heading" />
-      <Text text="Your active tables and next actions." style={themed($muted)} />
+      <Text text="My plans" preset="heading" />
+      <Text text="Upcoming tables, seat actions, and conversations." style={themed($muted)} />
       {isLoading ? <Text text="Loading tables..." style={themed($muted)} /> : null}
       {!!error ? (
         <View style={themed($empty)}>
@@ -110,9 +114,13 @@ export const TableChatsScreen: FC<TableChatsScreenProps> = ({ navigation }) => {
       ) : null}
       {!isLoading && !error && tables.length === 0 ? (
         <View style={themed($empty)}>
-          <Text text="No active tables yet" preset="subheading" />
-          <Text text="Join or create a table to unlock guided chat." style={themed($muted)} />
-          <Button text="Find tables" onPress={() => navigation.navigate("Today")} />
+          <Text text="No upcoming plans" preset="subheading" />
+          <Text text="Join a nearby table or create one of your own." style={themed($muted)} />
+          <Button
+            text="Explore nearby"
+            preset="reversed"
+            onPress={() => navigation.navigate("Today")}
+          />
         </View>
       ) : null}
       {!isLoading && !error ? tables.map(renderTable) : null}
