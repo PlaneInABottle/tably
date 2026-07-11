@@ -51,6 +51,10 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
   if (!supabaseUrl || !serviceRoleKey) return json({ error: "Notifications are not configured." }, 500)
 
+  if (req.headers.get("Authorization") !== `Bearer ${serviceRoleKey}`) {
+    return json({ error: "Service authorization required." }, 401)
+  }
+
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
@@ -58,13 +62,9 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}))
   const limit = Math.min(Math.max(Number(body.limit ?? 50), 1), 100)
 
-  const { data: events, error: eventsError } = await admin
-    .from("notification_events")
-    .select("id, recipient_id, table_id, type, title, body, data")
-    .eq("status", "queued")
-    .lte("scheduled_for", new Date().toISOString())
-    .order("scheduled_for", { ascending: true })
-    .limit(limit)
+  const { data: events, error: eventsError } = await admin.rpc("claim_notification_events", {
+    p_limit: limit,
+  })
 
   if (eventsError) return json({ error: eventsError.message }, 500)
 
@@ -114,59 +114,89 @@ Deno.serve(async (req) => {
   }
 
   if (skippedIds.length > 0) {
-    await admin
+    const { error } = await admin
       .from("notification_events")
-      .update({ status: "skipped", error: "No push token for recipient." })
+      .update({
+        status: "skipped",
+        error: "No push token for recipient.",
+        processing_started_at: null,
+      })
       .in("id", skippedIds)
+    if (error) return json({ error: error.message }, 500)
   }
 
-  let sent = 0
-  let failed = 0
-  const sentIds = new Set<string>()
-  const failedIds = new Set<string>()
+  const outcomes = new Map<string, { succeeded: boolean; failed: boolean }>()
   const invalidTokens: string[] = []
 
   for (const messageChunk of chunk(messages, 100)) {
-    const response = await fetch(EXPO_PUSH_URL, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(messageChunk.map(({ eventId: _eventId, ...message }) => message)),
-    })
+    try {
+      const response = await fetch(EXPO_PUSH_URL, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(messageChunk.map(({ eventId: _eventId, ...message }) => message)),
+      })
 
-    const result = await response.json().catch(() => ({ data: [] }))
-    const tickets = (result.data ?? []) as ExpoTicket[]
+      if (!response.ok) throw new Error(`Expo push returned HTTP ${response.status}`)
 
-    tickets.forEach((ticket, index) => {
-      const eventId = messageChunk[index]?.eventId
-      const token = messageChunk[index]?.to
-      if (!eventId) return
+      const result = await response.json().catch(() => ({ data: [] }))
+      const tickets = (result.data ?? []) as ExpoTicket[]
 
-      if (ticket.status === "ok") {
-        sent += 1
-        sentIds.add(eventId)
-      } else {
-        failed += 1
-        failedIds.add(eventId)
-        if (ticket.details?.error === "DeviceNotRegistered" && token) invalidTokens.push(token)
+      messageChunk.forEach((message, index) => {
+        const ticket = tickets[index]
+        const outcome = outcomes.get(message.eventId) ?? { succeeded: false, failed: false }
+
+        if (ticket?.status === "ok") {
+          outcome.succeeded = true
+        } else {
+          outcome.failed = true
+          if (ticket?.details?.error === "DeviceNotRegistered") invalidTokens.push(message.to)
+        }
+        outcomes.set(message.eventId, outcome)
+      })
+    } catch {
+      for (const message of messageChunk) {
+        const outcome = outcomes.get(message.eventId) ?? { succeeded: false, failed: false }
+        outcome.failed = true
+        outcomes.set(message.eventId, outcome)
       }
-    })
+    }
   }
 
-  if (sentIds.size > 0) {
-    await admin
-      .from("notification_events")
-      .update({ status: "sent", sent_at: new Date().toISOString(), error: null })
-      .in("id", [...sentIds])
+  const sentIds: string[] = []
+  const failedIds: string[] = []
+  for (const event of dueEvents) {
+    if (skippedIds.includes(event.id)) continue
+    const outcome = outcomes.get(event.id)
+    if (outcome?.succeeded) sentIds.push(event.id)
+    else failedIds.push(event.id)
   }
 
-  if (failedIds.size > 0) {
-    await admin
+  if (sentIds.length > 0) {
+    const { error } = await admin
       .from("notification_events")
-      .update({ status: "failed", error: "Expo push send failed." })
-      .in("id", [...failedIds])
+      .update({
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        error: null,
+        processing_started_at: null,
+      })
+      .in("id", sentIds)
+    if (error) return json({ error: error.message }, 500)
+  }
+
+  if (failedIds.length > 0) {
+    const { error } = await admin
+      .from("notification_events")
+      .update({
+        status: "failed",
+        error: "Expo push send failed.",
+        processing_started_at: null,
+      })
+      .in("id", failedIds)
+    if (error) return json({ error: error.message }, 500)
   }
 
   if (invalidTokens.length > 0) {
@@ -175,8 +205,8 @@ Deno.serve(async (req) => {
 
   return json({
     ok: true,
-    sent,
+    sent: sentIds.length,
     skipped: skippedIds.length,
-    failed,
+    failed: failedIds.length,
   })
 })

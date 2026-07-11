@@ -18,7 +18,7 @@
 - Link this repository to the production Supabase project.
 - Apply every migration in `supabase/migrations`.
 - Deploy `delete-account` and `send-notifications` Edge Functions.
-- Schedule `send-notifications` with a protected server-side job.
+- Schedule `send-notifications` with a server-side job authenticated by the service-role key.
 - Configure production Auth site URL and `tably://update-password` redirect.
 - Confirm the avatar bucket remains private.
 

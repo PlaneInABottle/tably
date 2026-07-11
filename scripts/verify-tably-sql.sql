@@ -60,6 +60,7 @@ select pg_temp.create_tably_test_user('00000000-0000-4000-8000-000000000901', 's
 select pg_temp.create_tably_test_user('00000000-0000-4000-8000-000000000902', 'sql.member.one@example.com', 'SQL Member One');
 select pg_temp.create_tably_test_user('00000000-0000-4000-8000-000000000903', 'sql.member.two@example.com', 'SQL Member Two');
 select pg_temp.create_tably_test_user('00000000-0000-4000-8000-000000000904', 'sql.waitlist@example.com', 'SQL Waitlist');
+select pg_temp.create_tably_test_user('00000000-0000-4000-8000-000000000905', 'sql.outsider@example.com', 'SQL Outsider');
 
 create temporary table tably_test_context (table_id uuid not null);
 grant select, insert on tably_test_context to authenticated;
@@ -102,6 +103,50 @@ begin
 end;
 $$;
 
+insert into public.notification_events (
+  recipient_id,
+  table_id,
+  type,
+  title,
+  body,
+  scheduled_for,
+  dedupe_key
+)
+values (
+  '00000000-0000-4000-8000-000000000901',
+  (select table_id from tably_test_context),
+  'table_message',
+  'Claim test',
+  'Claim this event once.',
+  now() - interval '1 minute',
+  'sql-notification-claim-test'
+);
+
+create temporary table claimed_notification_events as
+select id from public.claim_notification_events(100);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from claimed_notification_events claimed
+    join public.notification_events event on event.id = claimed.id
+    where event.dedupe_key = 'sql-notification-claim-test'
+      and event.status = 'processing'
+  ) then
+    raise exception 'Expected due notification to be claimed';
+  end if;
+
+  if exists (
+    select 1
+    from public.claim_notification_events(100) claimed_again
+    join claimed_notification_events first_claim on first_claim.id = claimed_again.id
+  ) then
+    raise exception 'Expected claimed notifications to be unavailable to a second worker';
+  end if;
+end;
+$$;
+
 select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000902', true);
 set local role authenticated;
 select * from public.join_social_table((select table_id from tably_test_context));
@@ -125,6 +170,68 @@ begin
       and profile_id = '00000000-0000-4000-8000-000000000904'
   ) then
     raise exception 'Expected fourth member to be waitlisted';
+  end if;
+end;
+$$;
+
+do $$
+declare
+  v_confirmed integer;
+  v_active integer;
+  v_waitlisted integer;
+begin
+  select confirmed_count, active_count, waitlist_count
+  into v_confirmed, v_active, v_waitlisted
+  from public.list_social_tables(-90, -180, 90, 180)
+  where id = (select table_id from tably_test_context);
+
+  if v_confirmed <> 0 or v_active <> 3 or v_waitlisted <> 1 then
+    raise exception 'Expected exact table counts 0/3/1, got %/%/%',
+      v_confirmed, v_active, v_waitlisted;
+  end if;
+end;
+$$;
+
+select set_config('app.tably_rpc', 'on', true);
+update public.table_members
+set intro_answer = 'private intro answer'
+where table_id = (select table_id from tably_test_context)
+  and profile_id = '00000000-0000-4000-8000-000000000902';
+
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000905', true);
+set local role authenticated;
+do $$
+begin
+  if exists (
+    select 1
+    from public.list_table_members((select table_id from tably_test_context))
+    where intro_answer <> ''
+  ) then
+    raise exception 'Expected intro answers to be masked for non-members';
+  end if;
+end;
+$$;
+select public.leave_social_table((select table_id from tably_test_context));
+reset role;
+
+do $$
+begin
+  if (
+    select count(*)
+    from public.table_members
+    where table_id = (select table_id from tably_test_context)
+      and status in ('pending_intro', 'pending_confirm', 'confirmed')
+  ) <> 3 then
+    raise exception 'Expected non-member leave to preserve active seat count';
+  end if;
+
+  if not exists (
+    select 1
+    from public.table_waitlist
+    where table_id = (select table_id from tably_test_context)
+      and profile_id = '00000000-0000-4000-8000-000000000904'
+  ) then
+    raise exception 'Expected non-member leave to preserve the waitlist';
   end if;
 end;
 $$;

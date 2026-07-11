@@ -1,4 +1,7 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.106.2"
+import {
+  createClient,
+  type SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2.106.2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +16,7 @@ function json(body: Record<string, unknown>, status = 200) {
   })
 }
 
-type SupabaseAdminClient = ReturnType<typeof createClient>
+type SupabaseAdminClient = SupabaseClient<any>
 
 async function listAvatarPaths(admin: SupabaseAdminClient, userId: string): Promise<string[]> {
   const avatarPaths: string[] = []
@@ -63,22 +66,23 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
-  let avatarPaths: string[]
+  const cleanupWarnings: string[] = []
+  let avatarPaths: string[] = []
   try {
     avatarPaths = await listAvatarPaths(admin, user.id)
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : "Avatar cleanup failed." }, 500)
-  }
-
-  if (avatarPaths.length > 0) {
-    const { error: removeError } = await admin.storage.from("avatars").remove(avatarPaths)
-    if (removeError) return json({ error: `Avatar cleanup failed: ${removeError.message}` }, 500)
+    cleanupWarnings.push(error instanceof Error ? error.message : "Avatar listing failed.")
   }
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id)
   if (deleteError) return json({ error: deleteError.message }, 500)
 
-  await admin.from("moderation_reports").insert({
+  if (avatarPaths.length > 0) {
+    const { error: removeError } = await admin.storage.from("avatars").remove(avatarPaths)
+    if (removeError) cleanupWarnings.push(`Avatar cleanup failed: ${removeError.message}`)
+  }
+
+  const { error: auditError } = await admin.from("moderation_reports").insert({
     reporter_id: null,
     reported_user_id: null,
     target_type: "profile",
@@ -91,6 +95,9 @@ Deno.serve(async (req) => {
       requested_at: new Date().toISOString(),
     },
   })
+  if (auditError) cleanupWarnings.push(`Deletion audit failed: ${auditError.message}`)
 
-  return json({ ok: true })
+  if (cleanupWarnings.length > 0) console.error(cleanupWarnings.join(" "))
+
+  return json({ ok: true, cleanupPending: cleanupWarnings.length > 0 })
 })

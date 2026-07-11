@@ -30,7 +30,7 @@ export async function getOwnProfile(userId: string): Promise<ServiceResult<Profi
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id,email,display_name,summary,avatar_path,location,show_location,is_first_login,created_at,updated_at",
+      "id,email,display_name,summary,avatar_path,location,show_location,is_first_login,terms_accepted_at,terms_version,moderation_status,created_at,updated_at",
     )
     .eq("id", userId)
     .single()
@@ -49,7 +49,7 @@ export async function updateOwnProfile(
     .update(normalizeProfilePatch(patch))
     .eq("id", userId)
     .select(
-      "id,email,display_name,summary,avatar_path,location,show_location,is_first_login,created_at,updated_at",
+      "id,email,display_name,summary,avatar_path,location,show_location,is_first_login,terms_accepted_at,terms_version,moderation_status,created_at,updated_at",
     )
     .single()
 

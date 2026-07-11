@@ -14,7 +14,8 @@ Use EAS environment variables for hosted builds. Do not commit `.env.local`, ser
 4. Deploy `supabase functions deploy delete-account`.
 5. Deploy `supabase functions deploy send-notifications`.
 6. Configure Auth URLs for the deployed legal site and `tably://update-password`.
-7. Create a protected schedule that invokes `send-notifications` regularly.
+7. Create a protected schedule that invokes `send-notifications` regularly with the service-role
+   key in the `Authorization: Bearer ...` header. User access tokens are rejected.
 8. Add development, preview, and production Supabase values to their matching EAS environments.
 
 ## Verification

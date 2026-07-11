@@ -14,11 +14,11 @@ import type {
   TableStatus,
 } from "./types"
 
-type AnySupabase = typeof supabase & {
+type RpcClient = {
   rpc: (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: any }>
 }
 
-const db = supabase as AnySupabase
+const db = supabase as unknown as RpcClient
 
 type SummaryRow = {
   id: string
