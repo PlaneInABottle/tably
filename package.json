@@ -20,7 +20,6 @@
     "test": "jest",
     "test:unit": "jest --runInBand",
     "test:watch": "jest --watch",
-    "seed:maestro": "sh scripts/seed-maestro-data.sh",
     "test:maestro": "sh -c 'EMAIL=\"${EMAIL:-tably.maestro.$(date +%s)@example.com}\"; PASSWORD=\"${PASSWORD:-Password123!}\"; DISPLAY_NAME=\"${DISPLAY_NAME:-Tably Tester}\"; APP_ID=\"${MAESTRO_APP_ID:-com.tably.app}\"; maestro test -e MAESTRO_APP_ID=\"$APP_ID\" .maestro/smoke-ios.yaml && maestro test -e MAESTRO_APP_ID=\"$APP_ID\" -e EMAIL=\"$EMAIL\" -e PASSWORD=\"$PASSWORD\" -e DISPLAY_NAME=\"$DISPLAY_NAME\" .maestro/flows/table-core.yaml'",
     "adb": "adb reverse tcp:9090 tcp:9090 && adb reverse tcp:3000 tcp:3000 && adb reverse tcp:9001 tcp:9001 && adb reverse tcp:8081 tcp:8081",
     "build:ios:sim": "pnpm dlx eas-cli@20.5.1 build --profile development --platform ios --local",

@@ -1,8 +1,8 @@
 import { ErrorInfo } from "react"
 import { ScrollView, TextStyle, View, ViewStyle } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 
 import { Button } from "@/components/Button"
-import { Icon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { useAppTheme } from "@/theme/context"
@@ -28,22 +28,24 @@ export function ErrorDetails(props: ErrorDetailsProps) {
       contentContainerStyle={themed($contentContainer)}
     >
       <View style={$topSection}>
-        <Icon icon="ladybug" size={64} />
+        <Ionicons name="alert-circle-outline" size={64} color={themed($errorIcon).color} />
         <Text style={themed($heading)} preset="subheading" tx="errorScreen:title" />
         <Text tx="errorScreen:friendlySubtitle" />
       </View>
 
-      <ScrollView
-        style={themed($errorSection)}
-        contentContainerStyle={themed($errorSectionContentContainer)}
-      >
-        <Text style={themed($errorContent)} weight="bold" text={`${props.error}`.trim()} />
-        <Text
-          selectable
-          style={themed($errorBacktrace)}
-          text={`${props.errorInfo?.componentStack ?? ""}`.trim()}
-        />
-      </ScrollView>
+      {__DEV__ ? (
+        <ScrollView
+          style={themed($errorSection)}
+          contentContainerStyle={themed($errorSectionContentContainer)}
+        >
+          <Text style={themed($errorContent)} weight="bold" text={`${props.error}`.trim()} />
+          <Text
+            selectable
+            style={themed($errorBacktrace)}
+            text={`${props.errorInfo?.componentStack ?? ""}`.trim()}
+          />
+        </ScrollView>
+      ) : null}
 
       <Button
         preset="reversed"
@@ -71,6 +73,8 @@ const $heading: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   color: colors.error,
   marginBottom: spacing.md,
 })
+
+const $errorIcon: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.error })
 
 const $errorSection: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   flex: 2,

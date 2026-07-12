@@ -1,8 +1,16 @@
-import type { MemberStatus, TableStatus } from "./types"
+import type { ActivityType, MemberStatus, TableStatus } from "./types"
 
 export type ChatPromptChip = {
   label: string
   message: string
+}
+
+export type TableShareDetails = {
+  id: string
+  activity: ActivityType
+  areaLabel: string
+  startsAt: string
+  title: string
 }
 
 export const TABLE_TIME_OPTIONS = [
@@ -112,6 +120,11 @@ export function formatPlanTime(value: string): string {
         : date.toLocaleDateString(undefined, { weekday: "short" })
 
   return `${day} ${date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`
+}
+
+export function buildTableShareCopy(table: TableShareDetails): string {
+  const plan = `${formatActivityLabel(table.activity)} · ${formatPlanTime(table.startsAt)} · ${table.areaLabel}`
+  return `${table.title}\n${plan}\nOpen in Tably: tably://table/${encodeURIComponent(table.id)}`
 }
 
 export function getActionDeadline(

@@ -534,7 +534,7 @@ const $filterChip: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderRadius: 8,
   borderWidth: 1,
   justifyContent: "center",
-  minHeight: 36,
+  minHeight: 44,
   paddingHorizontal: spacing.md,
 })
 
@@ -662,10 +662,10 @@ const $mapSearchButton =
 
 const $marker: ThemedStyle<ViewStyle> = () => ({
   alignItems: "center",
-  borderRadius: 18,
-  height: 36,
+  borderRadius: 22,
+  height: 44,
   justifyContent: "center",
-  width: 36,
+  width: 44,
 })
 
 const $markerSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({

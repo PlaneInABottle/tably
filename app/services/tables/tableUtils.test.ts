@@ -1,4 +1,5 @@
 import {
+  buildTableShareCopy,
   buildTableStartsAt,
   formatActivityLabel,
   formatCountdown,
@@ -62,6 +63,25 @@ describe("tableUtils", () => {
 
   it("formats plan times without crashing on valid dates", () => {
     expect(formatPlanTime("2026-06-24T18:30:00.000Z")).toContain(":")
+  })
+
+  it("builds privacy-safe table share copy", () => {
+    const copy = buildTableShareCopy({
+      id: "table-1",
+      title: "Coffee and conversation",
+      activity: "coffee",
+      startsAt: "2026-06-24T18:30:00.000Z",
+      areaLabel: "Kadikoy",
+    })
+
+    expect(copy).toContain("Coffee and conversation")
+    expect(copy).toContain("Coffee")
+    expect(copy).toContain("Kadikoy")
+    expect(copy).toContain("tably://table/table-1")
+    expect(copy).not.toContain("latitude")
+    expect(copy).not.toContain("longitude")
+    expect(copy).not.toContain("member")
+    expect(copy).not.toContain("intro")
   })
 
   it("selects the active deadline by member status", () => {

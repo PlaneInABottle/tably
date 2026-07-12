@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Share,
   TextStyle,
   View,
   ViewStyle,
@@ -15,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { Button } from "@/components/Button"
 import { InlineNotice } from "@/components/InlineNotice"
+import { MemberAvatar } from "@/components/MemberAvatar"
 import { Screen } from "@/components/Screen"
 import { TableMomentumBanner } from "@/components/TableMomentumBanner"
 import { Text } from "@/components/Text"
@@ -36,6 +38,7 @@ import {
   subscribeToTableMessages,
 } from "@/services/tables/tableService"
 import {
+  buildTableShareCopy,
   formatActivityLabel,
   formatPlanTime,
   getChatPromptChips,
@@ -70,12 +73,17 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
   const [messages, setMessages] = useState<TableMessage[]>([])
   const [introAnswer, setIntroAnswer] = useState("")
   const [draft, setDraft] = useState("")
+  const [detailError, setDetailError] = useState("")
+  const [memberError, setMemberError] = useState("")
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [isMembersLoading, setIsMembersLoading] = useState(false)
   const [isBusy, setIsBusy] = useState(false)
 
   const load = useCallback(async () => {
+    setDetailError("")
+    setMemberError("")
     setError("")
     const [detailResult, membersResult] = await Promise.all([
       getSocialTableDetail(tableId),
@@ -84,8 +92,12 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
 
     if (!mounted.current) return
     if (detailResult.ok) setTable(detailResult.data)
-    else setError(detailResult.error)
+    else {
+      setTable(null)
+      setDetailError(detailResult.error)
+    }
     if (membersResult.ok) setMembers(membersResult.data)
+    else setMemberError(membersResult.error)
 
     const currentStatus = detailResult.ok ? detailResult.data.myMemberStatus : null
     if (
@@ -95,6 +107,7 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
     ) {
       const messagesResult = await listTableMessages(tableId)
       if (mounted.current && messagesResult.ok) setMessages(messagesResult.data)
+      if (mounted.current && !messagesResult.ok) setError(messagesResult.error)
     }
 
     setIsLoading(false)
@@ -119,6 +132,21 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
       setError,
     )
   }, [table?.myMemberStatus, tableId])
+
+  function retryDetail() {
+    setIsLoading(true)
+    void load()
+  }
+
+  async function retryMembers() {
+    setIsMembersLoading(true)
+    setMemberError("")
+    const result = await listTableMembers(tableId)
+    if (!mounted.current) return
+    if (result.ok) setMembers(result.data)
+    else setMemberError(result.error)
+    setIsMembersLoading(false)
+  }
 
   async function handleJoin() {
     setIsBusy(true)
@@ -213,6 +241,19 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
     setDraft("")
   }
 
+  async function handleShare() {
+    if (!table) return
+    setError("")
+    try {
+      await Share.share({
+        message: buildTableShareCopy(table),
+        title: table.title,
+      })
+    } catch {
+      setError("This table could not be shared. Please try again.")
+    }
+  }
+
   function openReportReasons(targetType: "table" | "table_message", targetId: string) {
     Alert.alert("Report", "Choose the closest reason.", [
       ...REPORT_REASONS.map((reason) => ({
@@ -240,47 +281,93 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
 
   function confirmBlockCreator() {
     if (!table) return
-    Alert.alert(
-      "Block creator?",
-      `You will stop seeing tables from ${table.creator.displayName}.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Block",
-          style: "destructive",
-          onPress: () => void handleBlockCreator(),
-        },
-      ],
-    )
+    confirmBlockMember(table.creator.id, table.creator.displayName)
   }
 
-  async function handleBlockCreator() {
-    if (!table) return
+  function confirmBlockMember(memberId: string, displayName: string) {
+    Alert.alert("Block member?", `You will stop seeing content from ${displayName}.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Block",
+        style: "destructive",
+        onPress: () => void handleBlockMember(memberId),
+      },
+    ])
+  }
+
+  async function handleBlockMember(memberId: string) {
     setError("")
-    const result = await blockUser(table.creator.id)
+    const result = await blockUser(memberId)
     if (!result.ok) {
       setError(result.error)
       return
     }
 
+    setMessages((current) => current.filter((item) => item.senderId !== memberId))
+    setMembers((current) => current.filter((member) => member.profileId !== memberId))
     showSuccessToast("Member blocked")
-    navigation.goBack()
+    if (memberId === table?.creator.id) navigation.goBack()
+  }
+
+  function openMessageActions(item: TableMessage) {
+    Alert.alert(item.senderDisplayName, "Choose a safety action for this message.", [
+      {
+        text: "Report message",
+        onPress: () => openReportReasons("table_message", item.id),
+      },
+      {
+        text: "Block sender",
+        style: "destructive",
+        onPress: () => confirmBlockMember(item.senderId, item.senderDisplayName),
+      },
+      { text: "Cancel", style: "cancel" },
+    ])
+  }
+
+  function renderHost() {
+    if (!table) return null
+    const hostMember = members.find((member) => member.profileId === table.creator.id)
+    const summary = hostMember?.summary.trim()
+
+    return (
+      <View
+        accessible
+        accessibilityLabel={`Hosted by ${table.creator.displayName}, Host${summary ? `, ${summary}` : ""}`}
+        style={themed($hostSurface)}
+      >
+        <MemberAvatar
+          avatarPath={hostMember?.avatarPath ?? null}
+          displayName={table.creator.displayName}
+          size={48}
+        />
+        <View style={themed($hostCopy)}>
+          <Text text="Hosted by" size="xxs" preset="bold" style={themed($accent)} />
+          <View style={themed($hostNameRow)}>
+            <Text text={table.creator.displayName} preset="bold" />
+            <Text text="Host" size="xxs" preset="bold" style={themed($hostBadge)} />
+          </View>
+          {summary ? <Text text={summary} size="sm" style={themed($muted)} /> : null}
+        </View>
+      </View>
+    )
   }
 
   function renderMember(member: TableMember) {
+    const summary = member.summary.trim()
+    const intro = member.introAnswer.trim()
+    const memberIsHost = member.profileId === table?.creator.id
+
     return (
-      <View key={member.profileId} style={themed($memberPill)}>
-        <View style={themed($memberAvatar)}>
-          <Text
-            text={member.displayName.charAt(0).toUpperCase()}
-            size="xs"
-            preset="bold"
-            style={themed($avatarText)}
-          />
-        </View>
+      <View key={member.profileId} style={themed($memberRow)}>
+        <MemberAvatar avatarPath={member.avatarPath} displayName={member.displayName} />
         <View style={themed($memberCopy)}>
-          <Text text={member.displayName} size="xs" preset="bold" numberOfLines={1} />
-          <Text text={getMemberStatusLabel(member.status)} size="xxs" style={themed($muted)} />
+          <View style={themed($memberNameRow)}>
+            <Text text={member.displayName} size="sm" preset="bold" numberOfLines={1} />
+            {memberIsHost ? <Text text="Host" size="xxs" preset="bold" /> : null}
+            <Text text={getMemberStatusLabel(member.status)} size="xxs" style={themed($muted)} />
+          </View>
+          {summary ? <Text text={summary} size="xs" style={themed($muted)} /> : null}
+          {intro ? <Text text={`Intro: ${intro}`} size="xs" style={themed($memberIntro)} /> : null}
         </View>
       </View>
     )
@@ -294,6 +381,17 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
           {!isOwn ? <Text text={item.senderDisplayName} size="xs" preset="bold" /> : null}
           <Text text={item.body} style={themed(isOwn ? $ownBubbleText : $bubbleText)} />
         </View>
+        {!isOwn ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Safety options for message from ${item.senderDisplayName}`}
+            testID={`table-message-actions-${item.id}`}
+            onPress={() => openMessageActions(item)}
+            style={themed($messageActions)}
+          >
+            <Ionicons name="ellipsis-horizontal" size={20} color={colors.textDim} />
+          </Pressable>
+        ) : null}
       </View>
     )
   }
@@ -323,10 +421,48 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
             <Ionicons name="chevron-back" size={28} color={colors.text} />
           </Pressable>
           <Text text="Table" preset="heading" size="md" />
-          <View style={themed($backButton)} />
+          {table ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share table"
+              testID="table-detail-share-button"
+              onPress={() => void handleShare()}
+              style={themed($backButton)}
+            >
+              <Ionicons name="share-outline" size={24} color={colors.text} />
+            </Pressable>
+          ) : (
+            <View style={themed($backButton)} />
+          )}
         </View>
 
         {isLoading ? <Text text="Loading table..." style={themed($muted)} /> : null}
+        {!isLoading && !table && detailError ? (
+          <View style={themed($fatalState)}>
+            <InlineNotice variant="error" text={detailError} testID="table-detail-fatal-error" />
+            <Text
+              text="The table may be temporarily unavailable. You can retry or return to your plans."
+              style={themed($muted)}
+            />
+            <View style={themed($fatalActions)}>
+              <Button
+                text="Back"
+                accessibilityLabel="Back from unavailable table"
+                testID="table-detail-fatal-back-button"
+                onPress={() => navigation.goBack()}
+                style={themed($fatalButton)}
+              />
+              <Button
+                text="Retry"
+                accessibilityLabel="Retry loading table"
+                testID="table-detail-retry-button"
+                preset="reversed"
+                onPress={retryDetail}
+                style={themed($fatalButton)}
+              />
+            </View>
+          </View>
+        ) : null}
         {!!error ? <InlineNotice variant="error" text={error} /> : null}
         {!!message ? <InlineNotice variant="success" text={message} /> : null}
 
@@ -376,8 +512,22 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
               confirmDueAt={table.confirmDueAt}
             />
 
+            {renderHost()}
+
             <View style={themed($section)}>
               <Text text="People" preset="subheading" />
+              {memberError ? (
+                <View style={themed($memberErrorState)}>
+                  <InlineNotice variant="error" text={memberError} testID="table-members-error" />
+                  <Button
+                    text={isMembersLoading ? "Retrying..." : "Retry people"}
+                    accessibilityLabel="Retry loading people"
+                    testID="table-members-retry-button"
+                    disabled={isMembersLoading}
+                    onPress={() => void retryMembers()}
+                  />
+                </View>
+              ) : null}
               <View style={themed($members)}>{members.map(renderMember)}</View>
             </View>
 
@@ -412,6 +562,7 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                 <TextField
                   value={introAnswer}
                   onChangeText={setIntroAnswer}
+                  accessibilityLabel="Intro answer"
                   placeholder="A short answer is enough."
                   multiline
                   testID="table-intro-input"
@@ -470,6 +621,7 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
                   <TextField
                     value={draft}
                     onChangeText={setDraft}
+                    accessibilityLabel="Message the table"
                     placeholder="Message the table"
                     containerStyle={themed($composerInput)}
                     testID="table-message-input"
@@ -546,6 +698,19 @@ const $backButton: ThemedStyle<ViewStyle> = () => ({
   width: 44,
 })
 
+const $fatalState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  gap: spacing.md,
+})
+
+const $fatalActions: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  gap: spacing.sm,
+})
+
+const $fatalButton: ThemedStyle<ViewStyle> = () => ({
+  flex: 1,
+})
+
 const $muted: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.textDim,
 })
@@ -574,6 +739,36 @@ const $statusRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   gap: spacing.md,
 })
 
+const $hostSurface: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  alignItems: "center",
+  borderBottomColor: colors.separator,
+  borderBottomWidth: 1,
+  flexDirection: "row",
+  gap: spacing.md,
+  paddingBottom: spacing.md,
+})
+
+const $hostCopy: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flex: 1,
+  gap: spacing.xxs,
+})
+
+const $hostNameRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  alignItems: "center",
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: spacing.xs,
+})
+
+const $hostBadge: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.secondary100,
+  borderRadius: 999,
+  color: colors.palette.secondary500,
+  overflow: "hidden",
+  paddingHorizontal: spacing.xs,
+  paddingVertical: spacing.xxxs,
+})
+
 const $safetyRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.sm,
@@ -596,36 +791,36 @@ const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 })
 
 const $members: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  flexDirection: "row",
-  flexWrap: "wrap",
   gap: spacing.sm,
 })
 
-const $memberPill: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  alignItems: "center",
-  backgroundColor: colors.background,
-  borderRadius: 8,
+const $memberRow: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  alignItems: "flex-start",
+  borderBottomColor: colors.separator,
+  borderBottomWidth: 1,
   flexDirection: "row",
   gap: spacing.xs,
-  padding: spacing.sm,
-  width: "48%",
-})
-
-const $memberAvatar: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  alignItems: "center",
-  backgroundColor: colors.palette.secondary500,
-  borderRadius: 16,
-  height: 32,
-  justifyContent: "center",
-  width: 32,
-})
-
-const $avatarText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.palette.neutral100,
+  paddingBottom: spacing.sm,
 })
 
 const $memberCopy: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
+})
+
+const $memberNameRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  alignItems: "center",
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: spacing.xs,
+})
+
+const $memberIntro: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
+  color: colors.text,
+  marginTop: spacing.xxs,
+})
+
+const $memberErrorState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  gap: spacing.sm,
 })
 
 const $actionCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
@@ -638,7 +833,9 @@ const $actionCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 })
 
 const $messageRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  alignItems: "center",
   flexDirection: "row",
+  gap: spacing.xxs,
   marginVertical: spacing.xxs,
 })
 
@@ -648,7 +845,7 @@ const $ownMessageRow: ThemedStyle<ViewStyle> = () => ({
 
 const $bubble: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   borderRadius: 8,
-  maxWidth: "86%",
+  maxWidth: "82%",
   paddingHorizontal: spacing.md,
   paddingVertical: spacing.sm,
 })
@@ -669,6 +866,13 @@ const $ownBubbleText: ThemedStyle<TextStyle> = ({ colors }) => ({
   color: colors.palette.neutral100,
 })
 
+const $messageActions: ThemedStyle<ViewStyle> = () => ({
+  alignItems: "center",
+  height: 44,
+  justifyContent: "center",
+  width: 44,
+})
+
 const $composer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: "flex-end",
   flexDirection: "row",
@@ -682,11 +886,13 @@ const $promptChips: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 })
 
 const $promptChip: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  alignItems: "center",
   borderColor: colors.separator,
   borderRadius: 999,
   borderWidth: 1,
+  justifyContent: "center",
+  minHeight: 44,
   paddingHorizontal: spacing.md,
-  paddingVertical: spacing.xs,
 })
 
 const $composerInput: ThemedStyle<ViewStyle> = () => ({
