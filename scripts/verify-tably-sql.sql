@@ -185,8 +185,8 @@ begin
   from public.list_social_tables(-90, -180, 90, 180)
   where id = (select table_id from tably_test_context);
 
-  if v_confirmed <> 0 or v_active <> 3 or v_waitlisted <> 1 then
-    raise exception 'Expected exact table counts 0/3/1, got %/%/%',
+  if v_confirmed <> 1 or v_active <> 3 or v_waitlisted <> 1 then
+    raise exception 'Expected exact table counts 1/3/1, got %/%/%',
       v_confirmed, v_active, v_waitlisted;
   end if;
 end;
@@ -309,6 +309,38 @@ begin
     where id = (select table_id from tably_test_context)
   ) then
     raise exception 'Expected auth deletion to remove created tables';
+  end if;
+end;
+$$;
+
+do $$
+declare
+  v_visible_indexes integer;
+begin
+  select count(*)
+  into v_visible_indexes
+  from pg_indexes
+  where schemaname = 'public'
+    and (
+      (indexname = 'social_tables_active_created_idx'
+       and indexdef like '%(created_at DESC)%'
+       and indexdef like '%WHERE (content_removed_at IS NULL)%')
+      or
+      (indexname = 'table_messages_visible_idx'
+       and indexdef like '%(table_id, created_at)%'
+       and indexdef like '%WHERE (content_removed_at IS NULL)%')
+    );
+
+  if v_visible_indexes <> 2 then
+    raise exception 'Expected exact visible-row indexes';
+  end if;
+
+  if exists (
+    select 1 from pg_indexes
+    where schemaname = 'public'
+      and indexname in ('social_tables_content_removed_idx', 'table_messages_content_removed_idx')
+  ) then
+    raise exception 'Removed-row index definition remains';
   end if;
 end;
 $$;

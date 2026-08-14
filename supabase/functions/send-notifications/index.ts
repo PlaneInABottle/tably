@@ -114,14 +114,11 @@ Deno.serve(async (req) => {
   }
 
   if (skippedIds.length > 0) {
-    const { error } = await admin
-      .from("notification_events")
-      .update({
-        status: "skipped",
-        error: "No push token for recipient.",
-        processing_started_at: null,
-      })
-      .in("id", skippedIds)
+    const { error } = await admin.rpc("mark_notification_events", {
+      p_event_ids: skippedIds,
+      p_status: "skipped",
+      p_error: "No push token for recipient.",
+    })
     if (error) return json({ error: error.message }, 500)
   }
 
@@ -175,27 +172,20 @@ Deno.serve(async (req) => {
   }
 
   if (sentIds.length > 0) {
-    const { error } = await admin
-      .from("notification_events")
-      .update({
-        status: "sent",
-        sent_at: new Date().toISOString(),
-        error: null,
-        processing_started_at: null,
-      })
-      .in("id", sentIds)
+    const { error } = await admin.rpc("mark_notification_events", {
+      p_event_ids: sentIds,
+      p_status: "sent",
+      p_error: null,
+    })
     if (error) return json({ error: error.message }, 500)
   }
 
   if (failedIds.length > 0) {
-    const { error } = await admin
-      .from("notification_events")
-      .update({
-        status: "failed",
-        error: "Expo push send failed.",
-        processing_started_at: null,
-      })
-      .in("id", failedIds)
+    const { error } = await admin.rpc("mark_notification_events", {
+      p_event_ids: failedIds,
+      p_status: "failed",
+      p_error: "Expo push send failed.",
+    })
     if (error) return json({ error: error.message }, 500)
   }
 
