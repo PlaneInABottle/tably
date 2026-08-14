@@ -24,7 +24,8 @@
 
 ## Store and operations
 
-- Deploy `legal-site` at `https://tably.app` and verify every support URL.
+- Deploy the `APP_VARIANT=tably` artifact from the shared web repository at
+  `https://tably.app` and verify every legal/support URL.
 - Confirm `com.tably.app` exists in App Store Connect and Google Play Console.
 - Complete privacy/data-safety disclosures for account, profile, approximate location, user content, diagnostics, and push tokens.
 - Upload phone screenshots without Expo development controls.
