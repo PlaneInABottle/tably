@@ -73,6 +73,7 @@ type MessageRow = {
   body: string
   created_at: string
   updated_at: string
+  content_removed_at?: string | null
 }
 
 type ActiveChatRow = {
@@ -243,7 +244,7 @@ export async function getSocialTableDetail(
   const { data, error } = await db.rpc("get_social_table_detail", { p_table_id: tableId })
 
   if (error) return { ok: false, error: normalizeError(error.message) }
-  if (!data?.[0]) return { ok: false, error: "This table was not found." }
+  if (!data?.[0]) return { ok: false, error: "This table is no longer available." }
 
   return { ok: true, data: normalizeDetail(data[0]) }
 }
@@ -323,6 +324,7 @@ export function subscribeToTableMessages(
   tableId: string,
   onMessage: (message: TableMessage) => void,
   onError: (message: string) => void,
+  onRemoval?: () => void,
 ): () => void {
   const channel = supabase
     .channel(`table:${tableId}`)
@@ -335,6 +337,31 @@ export function subscribeToTableMessages(
         filter: `table_id=eq.${tableId}`,
       },
       (payload) => onMessage(normalizeMessage(payload.new as MessageRow)),
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "table_messages",
+        filter: `table_id=eq.${tableId}`,
+      },
+      (payload) => {
+        if ((payload.new as MessageRow).content_removed_at) onRemoval?.()
+      },
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "social_tables",
+        filter: `id=eq.${tableId}`,
+      },
+      (payload) => {
+        if ((payload.new as { content_removed_at?: string | null }).content_removed_at)
+          onRemoval?.()
+      },
     )
     .subscribe((status) => {
       if (status === "CHANNEL_ERROR") onError("Realtime updates are unavailable.")

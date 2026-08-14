@@ -12,6 +12,7 @@ type NotificationEvent = {
   id: string
   recipient_id: string
   table_id: string | null
+  table_message_id: string | null
   type: string
   title: string
   body: string
@@ -24,9 +25,61 @@ type PushToken = {
   platform: string
 }
 
+type SourceCheck = { id: string; deliverable: boolean }
+
 type ExpoTicket =
   | { status: "ok"; id: string }
   | { status: "error"; message: string; details?: { error?: string } }
+
+type AdminResult<T = unknown> = {
+  data: T | null
+  error: { message: string } | null
+}
+
+type NotificationAdmin = {
+  rpc: (name: string, args?: Record<string, unknown>) => Promise<AdminResult<unknown>>
+  from: (table: string) => {
+    select: (columns: string) => {
+      in: (column: string, values: string[]) => Promise<AdminResult<PushToken[]>>
+    }
+    delete: () => {
+      in: (column: string, values: string[]) => Promise<AdminResult<unknown>>
+    }
+  }
+}
+
+export type NotificationHandlerDependencies = {
+  getEnv?: (name: string) => string | undefined
+  createAdmin?: (url: string, serviceRoleKey: string) => NotificationAdmin
+  fetchImpl?: typeof fetch
+}
+
+export type NotificationClassification = {
+  deliverableEvents: NotificationEvent[]
+  noTokenIds: string[]
+  skippedIds: string[]
+}
+
+export function classifyNotificationEvents(
+  dueEvents: NotificationEvent[],
+  deliverableIds: Set<string>,
+  tokensByRecipient: Map<string, PushToken[]>,
+): NotificationClassification {
+  const sourceSkippedIds = dueEvents
+    .filter((event) => !deliverableIds.has(event.id))
+    .map((event) => event.id)
+  const sourceDeliverableEvents = dueEvents.filter((event) => deliverableIds.has(event.id))
+  const noTokenIds = sourceDeliverableEvents
+    .filter((event) => !(tokensByRecipient.get(event.recipient_id)?.length ?? 0))
+    .map((event) => event.id)
+  const noTokenSet = new Set(noTokenIds)
+
+  return {
+    deliverableEvents: sourceDeliverableEvents.filter((event) => !noTokenSet.has(event.id)),
+    noTokenIds,
+    skippedIds: [...new Set([...sourceSkippedIds, ...noTokenIds])],
+  }
+}
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -43,21 +96,28 @@ function chunk<T>(items: T[], size: number): T[][] {
   return chunks
 }
 
-Deno.serve(async (req) => {
+export function createNotificationHandler({
+  getEnv = (name) => Deno.env.get(name),
+  createAdmin = (url, serviceRoleKey) =>
+    createClient(url, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    }) as unknown as NotificationAdmin,
+  fetchImpl = fetch,
+}: NotificationHandlerDependencies = {}) {
+  return async function handleRequest(req: Request) {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405)
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-  if (!supabaseUrl || !serviceRoleKey) return json({ error: "Notifications are not configured." }, 500)
+  const supabaseUrl = getEnv("SUPABASE_URL")
+  const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY")
+  if (!supabaseUrl || !serviceRoleKey)
+    return json({ error: "Notifications are not configured." }, 500)
 
   if (req.headers.get("Authorization") !== `Bearer ${serviceRoleKey}`) {
     return json({ error: "Service authorization required." }, 401)
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
+  const admin = createAdmin(supabaseUrl, serviceRoleKey)
 
   const body = await req.json().catch(() => ({}))
   const limit = Math.min(Math.max(Number(body.limit ?? 50), 1), 100)
@@ -71,7 +131,35 @@ Deno.serve(async (req) => {
   const dueEvents = (events ?? []) as NotificationEvent[]
   if (dueEvents.length === 0) return json({ ok: true, sent: 0, skipped: 0, failed: 0 })
 
-  const recipientIds = [...new Set(dueEvents.map((event) => event.recipient_id))]
+  const { data: sourceChecks, error: sourceCheckError } = await admin.rpc(
+    "check_notification_event_sources",
+    {
+      p_event_ids: dueEvents.map((event) => event.id),
+    },
+  )
+  if (sourceCheckError) return json({ error: sourceCheckError.message }, 500)
+
+  const deliverableIds = new Set(
+    ((sourceChecks ?? []) as SourceCheck[])
+      .filter((source) => source.deliverable)
+      .map((source) => source.id),
+  )
+  const sourceSkippedIds = dueEvents
+    .filter((event) => !deliverableIds.has(event.id))
+    .map((event) => event.id)
+  if (sourceSkippedIds.length > 0) {
+    const { error } = await admin.rpc("mark_notification_events", {
+      p_event_ids: sourceSkippedIds,
+      p_status: "skipped",
+      p_error: "Content removed by moderation.",
+    })
+    if (error) return json({ error: error.message }, 500)
+  }
+  const recipientIds = [
+    ...new Set(
+      dueEvents.filter((event) => deliverableIds.has(event.id)).map((event) => event.recipient_id),
+    ),
+  ]
   const { data: tokens, error: tokensError } = await admin
     .from("push_tokens")
     .select("profile_id, token, platform")
@@ -86,15 +174,27 @@ Deno.serve(async (req) => {
     tokensByRecipient.set(token.profile_id, current)
   }
 
-  const skippedIds: string[] = []
+  const classification = classifyNotificationEvents(dueEvents, deliverableIds, tokensByRecipient)
+  const skippedIds = classification.skippedIds
+  const noTokenIds = classification.noTokenIds
+
+  if (noTokenIds.length > 0) {
+    const { error } = await admin.rpc("mark_notification_events", {
+      p_event_ids: noTokenIds,
+      p_status: "skipped",
+      p_error: "No push token for recipient.",
+    })
+    if (error) return json({ error: error.message }, 500)
+  }
+
+  const deliverableEvents = classification.deliverableEvents
+  if (deliverableEvents.length === 0)
+    return json({ ok: true, sent: 0, skipped: skippedIds.length, failed: 0 })
+
   const messages: Array<Record<string, unknown> & { eventId: string; to: string }> = []
 
-  for (const event of dueEvents) {
+  for (const event of deliverableEvents) {
     const recipientTokens = tokensByRecipient.get(event.recipient_id) ?? []
-    if (recipientTokens.length === 0) {
-      skippedIds.push(event.id)
-      continue
-    }
 
     for (const token of recipientTokens) {
       messages.push({
@@ -107,19 +207,11 @@ Deno.serve(async (req) => {
         data: {
           ...event.data,
           tableId: event.table_id,
+          ...(event.table_message_id ? { tableMessageId: event.table_message_id } : {}),
           type: event.type,
         },
       })
     }
-  }
-
-  if (skippedIds.length > 0) {
-    const { error } = await admin.rpc("mark_notification_events", {
-      p_event_ids: skippedIds,
-      p_status: "skipped",
-      p_error: "No push token for recipient.",
-    })
-    if (error) return json({ error: error.message }, 500)
   }
 
   const outcomes = new Map<string, { succeeded: boolean; failed: boolean }>()
@@ -127,10 +219,10 @@ Deno.serve(async (req) => {
 
   for (const messageChunk of chunk(messages, 100)) {
     try {
-      const response = await fetch(EXPO_PUSH_URL, {
+      const response = await fetchImpl(EXPO_PUSH_URL, {
         method: "POST",
         headers: {
-          Accept: "application/json",
+          "Accept": "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify(messageChunk.map(({ eventId: _eventId, ...message }) => message)),
@@ -199,4 +291,9 @@ Deno.serve(async (req) => {
     skipped: skippedIds.length,
     failed: failedIds.length,
   })
-})
+}
+}
+
+export const handleRequest = createNotificationHandler()
+
+if (import.meta.main) Deno.serve(handleRequest)

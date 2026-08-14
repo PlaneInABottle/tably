@@ -1,7 +1,8 @@
 \set ON_ERROR_STOP on
 
--- M4.1 is deliberately checked against the pre-admin function inventory.  M4.2
--- appends its role/admin/worker rows; this file must not name those objects.
+-- Complete M4.1 + M4.2 catalog privilege manifest. M4.2 rows are asserted
+-- alongside the retained M4.1 inventory so generated evidence covers every
+-- exact signature and effective role privilege.
 begin;
 
 create temporary table tably_acl_expected (
@@ -34,7 +35,7 @@ insert into tably_acl_expected values
   ('public.list_table_members(uuid)', true, 'public, pg_temp', false, false, true, true),
   ('public.list_table_messages(uuid)', true, 'public, pg_temp', false, false, true, true),
   ('public.list_my_active_tables()', true, 'public, pg_temp', false, false, true, true),
-  ('public.send_table_message(uuid,text)', true, 'public, pg_temp', false, false, true, true),
+  ('public.send_table_message(uuid,text)', true, 'public, extensions, pg_temp', false, false, true, true),
   ('public.create_profile_location(text,double precision,double precision,boolean)', true, 'public, extensions, pg_temp', false, false, true, true),
   ('public.update_profile_location(uuid,text,double precision,double precision)', true, 'public, extensions, pg_temp', false, false, true, true),
   ('public.delete_profile_location(uuid)', true, 'public, pg_temp', false, false, true, true),
@@ -82,7 +83,26 @@ insert into tably_acl_expected values
   ('public.protect_profile_server_fields()', true, 'public, pg_temp', false, false, false, false),
   ('public.protect_tably_server_fields()', true, 'public, pg_temp', false, false, false, false),
   ('public.set_updated_at()', true, 'public, pg_temp', false, false, false, false),
-  ('public.admin_has_role(text)', true, 'public, pg_temp', false, false, false, false);
+  ('public.admin_has_role(text)', true, 'public, pg_temp', false, false, false, false),
+  ('public.admin_get_my_role()', true, 'public, pg_temp', false, false, true, true),
+  ('public.moderation_assert_staff(text)', true, 'public, pg_temp', false, false, false, false),
+  ('public.moderation_encode_offset(integer)', false, 'public, pg_temp', false, false, false, false),
+  ('public.moderation_decode_offset(text)', false, 'public, pg_temp', false, false, false, false),
+  ('public.moderation_sanitize_snapshot(jsonb)', false, 'public, pg_temp', false, false, false, false),
+  ('public.moderation_snapshot_shape_valid(text,jsonb)', false, 'public, pg_temp', false, false, false, false),
+  ('public.moderation_actor_label(uuid)', true, 'public, pg_temp', false, false, false, false),
+  ('public.admin_queue_list(text,text,text,integer,text)', true, 'public, pg_temp', false, false, true, true),
+  ('public.admin_report_detail(uuid)', true, 'public, pg_temp', false, false, true, true),
+  ('public.admin_audit_list(text,uuid,integer,text)', true, 'public, pg_temp', false, false, true, true),
+  ('public.moderation_claim(uuid)', true, 'public, pg_temp', false, false, true, true),
+  ('public.moderation_dismiss(uuid,text,timestamptz)', true, 'public, pg_temp', false, false, true, true),
+  ('public.admin_set_moderation_status(uuid,text,text,timestamptz)', true, 'public, pg_temp', false, false, true, true),
+  ('public.moderation_action_content(uuid,text,timestamptz)', true, 'public, pg_temp', false, false, true, true),
+  ('public.queue_notification_event(uuid,uuid,text,text,text,jsonb,timestamptz,text,uuid)', true, 'public, pg_temp', false, false, false, false),
+  ('public.check_notification_event_sources(uuid[])', true, 'public, pg_temp', false, false, false, true),
+  ('public.trg_admin_reports_clear_claim()', false, 'public, pg_temp', false, false, false, false),
+  ('public.trg_admin_audit_append_only()', false, 'public, pg_temp', false, false, false, false),
+  ('public.guard_content_removal()', false, 'public, pg_temp', false, false, false, false);
 
 do $$
 declare
@@ -111,7 +131,7 @@ begin
     raise exception 'ACL manifest privilege/config mismatch: %', v_bad;
   end if;
 
-  if (select count(*) from tably_acl_expected) <> 68 then
+   if (select count(*) from tably_acl_expected) <> 87 then
     raise exception 'ACL manifest row count drifted';
   end if;
 end;

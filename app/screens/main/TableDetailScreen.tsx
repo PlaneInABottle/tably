@@ -125,13 +125,19 @@ export const TableDetailScreen: FC<TableDetailScreenProps> = ({ navigation, rout
   )
 
   useEffect(() => {
-    if (!table?.myMemberStatus || table.myMemberStatus === "waitlisted") return undefined
+    if (!table) return undefined
     return subscribeToTableMessages(
       tableId,
       (nextMessage) => setMessages((current) => mergeMessages(current, nextMessage)),
       setError,
+      () => {
+        setTable(null)
+        setMembers([])
+        setMessages([])
+        void load()
+      },
     )
-  }, [table?.myMemberStatus, tableId])
+  }, [load, table, tableId])
 
   function retryDetail() {
     setIsLoading(true)

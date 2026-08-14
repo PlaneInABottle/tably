@@ -28,6 +28,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_roles: {
+        Row: {
+          created_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
@@ -63,6 +81,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          content_removed_at: string | null
           created_at: string
           id: string
           participant_high: string
@@ -70,6 +89,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          content_removed_at?: string | null
           created_at?: string
           id?: string
           participant_high: string
@@ -77,6 +97,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          content_removed_at?: string | null
           created_at?: string
           id?: string
           participant_high?: string
@@ -102,6 +123,7 @@ export type Database = {
       }
       dives: {
         Row: {
+          content_removed_at: string | null
           created_at: string
           created_by: string
           description: string
@@ -114,6 +136,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          content_removed_at?: string | null
           created_at?: string
           created_by: string
           description: string
@@ -126,6 +149,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          content_removed_at?: string | null
           created_at?: string
           created_by?: string
           description?: string
@@ -157,6 +181,7 @@ export type Database = {
       messages: {
         Row: {
           body: string
+          content_removed_at: string | null
           conversation_id: string
           created_at: string
           id: string
@@ -165,6 +190,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          content_removed_at?: string | null
           conversation_id: string
           created_at?: string
           id?: string
@@ -173,6 +199,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          content_removed_at?: string | null
           conversation_id?: string
           created_at?: string
           id?: string
@@ -196,14 +223,74 @@ export type Database = {
           },
         ]
       }
+      moderation_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_label: string
+          after_state: Json
+          before_state: Json
+          created_at: string
+          id: string
+          reason: string | null
+          report_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_label?: string
+          after_state?: Json
+          before_state?: Json
+          created_at?: string
+          id?: string
+          reason?: string | null
+          report_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_label?: string
+          after_state?: Json
+          before_state?: Json
+          created_at?: string
+          id?: string
+          reason?: string | null
+          report_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_audit_log_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "moderation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       moderation_reports: {
         Row: {
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
           details: string
           id: string
           reason: string
           reported_user_id: string | null
           reporter_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          sla_due_at: string | null
           snapshot: Json
           status: string
           target_id: string
@@ -211,12 +298,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           details?: string
           id?: string
           reason: string
           reported_user_id?: string | null
           reporter_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sla_due_at?: string | null
           snapshot?: Json
           status?: string
           target_id: string
@@ -224,12 +317,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           details?: string
           id?: string
           reason?: string
           reported_user_id?: string | null
           reporter_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sla_due_at?: string | null
           snapshot?: Json
           status?: string
           target_id?: string
@@ -237,6 +336,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "moderation_reports_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "moderation_reports_reported_user_id_fkey"
             columns: ["reported_user_id"]
@@ -247,6 +353,13 @@ export type Database = {
           {
             foreignKeyName: "moderation_reports_reporter_id_fkey"
             columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_reports_resolved_by_fkey"
+            columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -267,6 +380,7 @@ export type Database = {
           sent_at: string | null
           status: string
           table_id: string | null
+          table_message_id: string | null
           title: string
           type: string
           updated_at: string
@@ -284,6 +398,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           table_id?: string | null
+          table_message_id?: string | null
           title: string
           type: string
           updated_at?: string
@@ -301,6 +416,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           table_id?: string | null
+          table_message_id?: string | null
           title?: string
           type?: string
           updated_at?: string
@@ -318,6 +434,13 @@ export type Database = {
             columns: ["table_id"]
             isOneToOne: false
             referencedRelation: "social_tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_table_message_id_fkey"
+            columns: ["table_message_id"]
+            isOneToOne: false
+            referencedRelation: "table_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -494,6 +617,7 @@ export type Database = {
         Row: {
           activity: string
           area_label: string
+          content_removed_at: string | null
           created_at: string
           created_by: string
           id: string
@@ -511,6 +635,7 @@ export type Database = {
         Insert: {
           activity: string
           area_label: string
+          content_removed_at?: string | null
           created_at?: string
           created_by: string
           id?: string
@@ -528,6 +653,7 @@ export type Database = {
         Update: {
           activity?: string
           area_label?: string
+          content_removed_at?: string | null
           created_at?: string
           created_by?: string
           id?: string
@@ -606,6 +732,7 @@ export type Database = {
       table_messages: {
         Row: {
           body: string
+          content_removed_at: string | null
           created_at: string
           id: string
           sender_id: string
@@ -614,6 +741,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          content_removed_at?: string | null
           created_at?: string
           id?: string
           sender_id: string
@@ -622,6 +750,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          content_removed_at?: string | null
           created_at?: string
           id?: string
           sender_id?: string
@@ -726,6 +855,37 @@ export type Database = {
           terms_version: string
         }[]
       }
+      admin_audit_list: {
+        Args: {
+          p_action?: string
+          p_actor_id?: string
+          p_page_size?: number
+          p_page_token?: string
+        }
+        Returns: Json
+      }
+      admin_get_my_role: { Args: never; Returns: string }
+      admin_has_role: { Args: { p_required_role: string }; Returns: boolean }
+      admin_queue_list: {
+        Args: {
+          p_assignee?: string
+          p_page_size?: number
+          p_page_token?: string
+          p_status?: string
+          p_target_type?: string
+        }
+        Returns: Json
+      }
+      admin_report_detail: { Args: { p_report_id: string }; Returns: Json }
+      admin_set_moderation_status: {
+        Args: {
+          p_expected_updated_at: string
+          p_reason: string
+          p_status: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       answer_table_intro: {
         Args: { p_answer: string; p_table_id: string }
         Returns: {
@@ -743,6 +903,13 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
+      check_notification_event_sources: {
+        Args: { p_event_ids: string[] }
+        Returns: {
+          deliverable: boolean
+          id: string
+        }[]
+      }
       claim_notification_events: {
         Args: { p_limit?: number }
         Returns: {
@@ -750,7 +917,8 @@ export type Database = {
           data: Json
           id: string
           recipient_id: string
-          table_id: string
+          table_id: string | null
+          table_message_id: string | null
           title: string
           type: string
         }[]
@@ -808,6 +976,7 @@ export type Database = {
           id: string
         }[]
       }
+      current_profile_moderation_status: { Args: never; Returns: string }
       delete_own_dive: {
         Args: { p_dive_id: string }
         Returns: {
@@ -1087,19 +1256,66 @@ export type Database = {
         Args: { p_location: unknown; p_owner_id: string }
         Returns: undefined
       }
-      queue_notification_event: {
+      moderation_action_content: {
         Args: {
-          p_body: string
-          p_data?: Json
-          p_dedupe_key?: string
-          p_recipient_id: string
-          p_scheduled_for?: string
-          p_table_id: string
-          p_title: string
-          p_type: string
+          p_expected_updated_at: string
+          p_reason: string
+          p_report_id: string
         }
+        Returns: Json
+      }
+      moderation_actor_label: { Args: { p_actor_id: string }; Returns: string }
+      moderation_assert_staff: {
+        Args: { p_required_role?: string }
         Returns: undefined
       }
+      moderation_claim: { Args: { p_report_id: string }; Returns: Json }
+      moderation_decode_offset: { Args: { p_token: string }; Returns: number }
+      moderation_dismiss: {
+        Args: {
+          p_expected_updated_at: string
+          p_reason: string
+          p_report_id: string
+        }
+        Returns: Json
+      }
+      moderation_encode_offset: { Args: { p_offset: number }; Returns: string }
+      moderation_sanitize_snapshot: {
+        Args: { p_snapshot: Json }
+        Returns: Json
+      }
+      moderation_snapshot_shape_valid: {
+        Args: { p_snapshot: Json; p_target_type: string }
+        Returns: boolean
+      }
+      queue_notification_event:
+        | {
+            Args: {
+              p_body: string
+              p_data?: Json
+              p_dedupe_key?: string
+              p_recipient_id: string
+              p_scheduled_for?: string
+              p_table_id: string
+              p_title: string
+              p_type: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_body: string
+              p_data: Json
+              p_dedupe_key: string
+              p_recipient_id: string
+              p_scheduled_for: string
+              p_table_id: string
+              p_table_message_id: string
+              p_title: string
+              p_type: string
+            }
+            Returns: undefined
+          }
       refresh_table_status: { Args: { p_table_id: string }; Returns: undefined }
       reject_objectionable_text: {
         Args: { p_text: string }
@@ -1109,6 +1325,7 @@ export type Database = {
         Args: { p_table_id?: string }
         Returns: undefined
       }
+      require_active_profile: { Args: never; Returns: undefined }
       send_message: {
         Args: { p_body: string; p_conversation_id: string }
         Returns: {

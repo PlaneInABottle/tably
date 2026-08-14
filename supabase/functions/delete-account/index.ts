@@ -91,8 +91,9 @@ Deno.serve(async (req) => {
     details: "User requested immediate account deletion from the app.",
     status: "actioned",
     snapshot: {
-      email: user.email,
-      requested_at: new Date().toISOString(),
+      account_deletion: {
+        requested_at: new Date().toISOString(),
+      },
     },
   })
   if (auditError) cleanupWarnings.push(`Deletion audit failed: ${auditError.message}`)

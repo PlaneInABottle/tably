@@ -8,12 +8,36 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, c
 values
   ('00000000-0000-4000-8000-000000000901', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'legacy.creator@example.invalid', crypt('Password123!', gen_salt('bf')), '', '', '', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Legacy Creator"}'::jsonb, now(), now()),
   ('00000000-0000-4000-8000-000000000902', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'legacy.member@example.invalid', crypt('Password123!', gen_salt('bf')), '', '', '', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Legacy Member"}'::jsonb, now(), now()),
-  ('00000000-0000-4000-8000-000000000903', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'legacy.deleted@example.invalid', crypt('Password123!', gen_salt('bf')), '', '', '', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Legacy Deleted"}'::jsonb, now(), now())
+  ('00000000-0000-4000-8000-000000000903', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'legacy.deleted@example.invalid', crypt('Password123!', gen_salt('bf')), '', '', '', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Legacy Deleted"}'::jsonb, now(), now()),
+  ('00000000-0000-4000-8000-000000000904', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'legacy.nonstaff@example.invalid', crypt('Password123!', gen_salt('bf')), '', '', '', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Legacy Nonstaff"}'::jsonb, now(), now()),
+  ('00000000-0000-4000-8000-000000000905', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'legacy.deleted.admin@example.invalid', crypt('Password123!', gen_salt('bf')), '', '', '', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Deleted Admin"}'::jsonb, now(), now()),
+  ('00000000-0000-4000-8000-000000000906', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'legacy.deleted.reviewer@example.invalid', crypt('Password123!', gen_salt('bf')), '', '', '', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Deleted Reviewer"}'::jsonb, now(), now())
+on conflict (id) do nothing;
+
+insert into public.profiles (id, email, display_name, summary, is_first_login, moderation_status, terms_accepted_at, terms_version)
+values
+  ('00000000-0000-4000-8000-000000000905', 'legacy.deleted.admin@example.invalid', 'Deleted Admin', 'fixture admin', false, 'active', now(), '2026-06-ugc-v1'),
+  ('00000000-0000-4000-8000-000000000906', 'legacy.deleted.reviewer@example.invalid', 'Deleted Reviewer', 'fixture reviewer', false, 'active', now(), '2026-06-ugc-v1')
 on conflict (id) do nothing;
 
 update public.profiles
+set display_name = case id
+      when '00000000-0000-4000-8000-000000000905'::uuid then 'Deleted Admin'
+      when '00000000-0000-4000-8000-000000000906'::uuid then 'Deleted Reviewer'
+    end,
+    summary = case id
+      when '00000000-0000-4000-8000-000000000905'::uuid then 'fixture admin'
+      when '00000000-0000-4000-8000-000000000906'::uuid then 'fixture reviewer'
+    end,
+    is_first_login = false,
+    moderation_status = 'active',
+    terms_accepted_at = coalesce(terms_accepted_at, now()),
+    terms_version = coalesce(terms_version, '2026-06-ugc-v1')
+where id in ('00000000-0000-4000-8000-000000000905','00000000-0000-4000-8000-000000000906');
+
+update public.profiles
 set terms_accepted_at = now(), terms_version = '2026-06-ugc-v1'
-where id in ('00000000-0000-4000-8000-000000000901', '00000000-0000-4000-8000-000000000902', '00000000-0000-4000-8000-000000000903');
+where id in ('00000000-0000-4000-8000-000000000901', '00000000-0000-4000-8000-000000000902', '00000000-0000-4000-8000-000000000903', '00000000-0000-4000-8000-000000000904', '00000000-0000-4000-8000-000000000905', '00000000-0000-4000-8000-000000000906');
 
 select set_config('app.tably_rpc', 'on', false);
 insert into public.social_tables (id, created_by, activity, title, note, vibe, area_label, starts_at, min_seats, max_seats, intro_prompt, location)
